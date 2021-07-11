@@ -90,10 +90,6 @@ void i2cReceive(int numBytesReceived) {
     }
 }
 
-void moveToDirList(){
-
-}
-
 // the loop function runs over and over again forever
 void loop() {
   for(int i = 0; i < NUM_STEPPERS; i++){
