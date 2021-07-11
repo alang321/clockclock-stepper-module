@@ -713,7 +713,7 @@ boolean AccelStepper::runZeroing()
             for(int i = 0; i < _currZeroRevolution; i++){
                 sum += _hallTripPosition[i];
             }
-            moveToSingleRevolution(sum/(_currZeroRevolution)+hallOffset); // move to new zero position and then set to zero
+            moveToShortestPath(sum/(_currZeroRevolution)+hallOffset); // move to new zero position and then set to zero
         }else{
             setCurrentPosition(0);
             return true;

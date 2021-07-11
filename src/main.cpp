@@ -1,29 +1,33 @@
 #include <Arduino.h>
 #include <AccelStepper.h>
+#include <Wire.h>
 
 #define NUM_STEPPERS 8
 #define NUM_STEPPERS_H 4
 #define NUM_STEPPERS_M 4
 #define NUM_CLOCKS 4
+#define MOTOR_SPEED 1200
 
 void i2cReceive(int numBytesReceived);
 
-const int address = 10;
+const int address = 10; //10-16, 10 is at top left from clockface, row first
 
 const int fullRev = 360*12;
 
 struct move_data {
-  uint16_t position;
-  int8_t dir; // -1, 0, 1
-  uint8_t sub_id;
-  bool minute_pointer;
+  uint16_t speed; //2 bytes
+  uint16_t position; //2bytes
+  int8_t dir; // -1, 0, 1 1byte
+  uint8_t sub_id; //1byte
+  bool is_minute_pointer; //1byte    =   7bytes/32bytes max
 
-  move_data(uint16_t position, int8_t dir, uint8_t sub_id, bool minute_pointer)      
+  move_data(uint16_t position, int8_t dir, uint8_t sub_id, bool is_minute_pointer, uint16_t apeed = MOTOR_SPEED)      
   {      
+    this->speed = speed;  
     this->position = position;     
     this->dir = dir;      
     this->sub_id  = sub_id;   
-    this->minute_pointer = minute_pointer;   
+    this->is_minute_pointer = is_minute_pointer;   
   }     
 };
 
@@ -61,20 +65,39 @@ void setup() {
 void i2cReceive(int numBytesReceived) {
   Wire.readBytes( (byte*) &move_i2c, numBytesReceived);
   
-  //todo : implement dir
-  //todo : implement set speed
-  if(move_i2c.minute_pointer){
-	mSteppers[move_i2c.sub_id]->moveToShortestPath(move_i2c.position)
+  AccelStepper *stepper;
+  if(move_i2c.is_minute_pointer){
+    stepper = mSteppers[move_i2c.sub_id];
   }
   else{
-	hSteppers[move_i2c.sub_id]->moveToShortestPath(move_i2c.position)
+    stepper = hSteppers[move_i2c.sub_id];
   }
+
+  stepper->setMaxSpeed(move_i2c.speed);
+
+  switch(move_i2c.dir) {
+      case 1:
+        stepper->moveToSingleRevolutionDir(move_i2c.position, move_i2c.dir);
+        break;
+      case 0:
+        stepper->moveToShortestPath(move_i2c.position);
+        break;
+      case -1:
+        stepper->moveToSingleRevolutionDir(move_i2c.position, move_i2c.dir);
+        break;
+      default:
+        stepper->moveToShortestPath(move_i2c.position);
+    }
+}
+
+void moveToDirList(){
+
 }
 
 // the loop function runs over and over again forever
 void loop() {
   for(int i = 0; i < NUM_STEPPERS; i++){
-	allSteppers[i]->run();
+	  allSteppers[i]->run();
   }
 }
 
