@@ -7,6 +7,7 @@
 #define NUM_STEPPERS_M 4
 #define NUM_CLOCKS 4
 #define MOTOR_SPEED 1200
+#define STEPPER_DEFAULT_POS_FRACTION 0.5 //at 6o'clock position
 
 void i2cReceive(int numBytesReceived);
 
@@ -59,6 +60,7 @@ void setup() {
     allSteppers[i]->setPinModesDriver();
     allSteppers[i]->setMaxSpeed(1100);
     allSteppers[i]->setAcceleration(1100);
+    allSteppers[i]->setCurrentPosition((int)(fullRev*STEPPER_DEFAULT_POS_FRACTION));
   }
   
   //Initialize as i2c slave
