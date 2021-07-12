@@ -11,6 +11,7 @@
 void i2cReceive(int numBytesReceived);
 
 const uint8_t address = 10; //10-16, 10 is at top left from clockface, row first
+//i2c pins used, from the circuit board
 const int sda = 15;
 const int scl = 16;
 
@@ -60,7 +61,7 @@ void setup() {
     allSteppers[i]->setAcceleration(1100);
   }
   
-  //Wire.begin(sda, scl, address); //sda, scl, adress
+  //Initialize as i2c slave
   Wire.setSCL(scl);
   Wire.setSDA(sda);
   Wire.begin(address); 
