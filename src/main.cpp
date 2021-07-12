@@ -71,6 +71,8 @@ void i2cReceive(int numBytesReceived) {
   Wire.readBytes( (byte*) &move_i2c, numBytesReceived);
   
   AccelStepper *stepper;
+
+  //minute or hour pointer
   if(move_i2c.is_minute_pointer){
     stepper = mSteppers[move_i2c.sub_id];
   }
@@ -80,19 +82,12 @@ void i2cReceive(int numBytesReceived) {
 
   stepper->setMaxSpeed(move_i2c.speed);
 
-  switch(move_i2c.dir) {
-      case 1:
-        stepper->moveToSingleRevolutionDir(move_i2c.position, move_i2c.dir);
-        break;
-      case 0:
-        stepper->moveToShortestPath(move_i2c.position);
-        break;
-      case -1:
-        stepper->moveToSingleRevolutionDir(move_i2c.position, move_i2c.dir);
-        break;
-      default:
-        stepper->moveToShortestPath(move_i2c.position);
-    }
+  //movement direction, shortest, left or right
+  if(move_i2c.dir == 0){
+    stepper->moveToShortestPath(move_i2c.position);
+  }else{
+    stepper->moveToSingleRevolutionDir(move_i2c.position, move_i2c.dir);
+  }
 }
 
 // the loop function runs over and over again forever
