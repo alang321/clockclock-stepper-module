@@ -10,7 +10,9 @@
 
 void i2cReceive(int numBytesReceived);
 
-const int address = 10; //10-16, 10 is at top left from clockface, row first
+const uint8_t address = 10; //10-16, 10 is at top left from clockface, row first
+const int sda = 15;
+const int scl = 16;
 
 const int fullRev = 360*12;
 
@@ -27,7 +29,7 @@ struct move_data {
     this->position = position;     
     this->dir = dir;      
     this->sub_id  = sub_id;   
-    this->is_minute_pointer = is_minute_pointer;   
+    this->is_minute_pointer = is_minute_pointer;   //true minute hand - false hour hand
   }     
 };
 
@@ -58,7 +60,10 @@ void setup() {
     allSteppers[i]->setAcceleration(1100);
   }
   
-  Wire.begin(address);
+  //Wire.begin(sda, scl, address); //sda, scl, adress
+  Wire.setSCL(scl);
+  Wire.setSDA(sda);
+  Wire.begin(address); 
   Wire.onReceive(i2cReceive);
 }
 
