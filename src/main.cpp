@@ -25,7 +25,7 @@ struct move_data {
   uint8_t sub_id; //1byte
   bool is_minute_pointer; //1byte    =   7bytes/32bytes max
 
-  move_data(uint16_t position, int8_t dir, uint8_t sub_id, bool is_minute_pointer, uint16_t apeed = MOTOR_SPEED)      
+  move_data(uint16_t position, int8_t dir, uint8_t sub_id, bool is_minute_pointer, uint16_t speed = MOTOR_SPEED)      
   {      
     this->speed = speed;  
     this->position = position;     
