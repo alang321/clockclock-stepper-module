@@ -6,12 +6,13 @@
 #define NUM_STEPPERS_H 4
 #define NUM_STEPPERS_M 4
 #define NUM_CLOCKS 4
-#define MOTOR_SPEED 1200
+#define STEPPER_DEFAULT_SPEED 1100
+#define STEPPER_DEFAULT_ACCEL 1100
 #define STEPPER_DEFAULT_POS_FRACTION 0.5 //at 6o'clock position
 
 void i2cReceive(int numBytesReceived);
 
-const uint8_t address = 10; //10-16, 10 is at top left from clockface, row first
+const uint8_t address = 10; //1-16, 10 is at top left from clockface, row first
 //i2c pins used, from the circuit board
 const int sda = 15;
 const int scl = 16;
@@ -25,13 +26,14 @@ struct move_data {
   uint8_t sub_id; //1byte
   bool is_minute_pointer; //1byte    =   7bytes/32bytes max
 
-  move_data(uint16_t position, int8_t dir, uint8_t sub_id, bool is_minute_pointer, uint16_t speed = MOTOR_SPEED)      
+
+  move_data(uint16_t position, int8_t dir, uint8_t sub_id, bool is_minute_pointer, uint16_t speed)      
   {      
     this->speed = speed;  
     this->position = position;     
     this->dir = dir;      
     this->sub_id  = sub_id;   
-    this->is_minute_pointer = is_minute_pointer;   //true minute hand - false hour hand
+    this->is_minute_pointer = is_minute_pointer;   
   }     
 };
 
@@ -58,8 +60,8 @@ void setup() {
 
   for(int i = 0; i < NUM_STEPPERS; i++){
     allSteppers[i]->setPinModesDriver();
-    allSteppers[i]->setMaxSpeed(1100);
-    allSteppers[i]->setAcceleration(1100);
+    allSteppers[i]->setMaxSpeed(STEPPER_DEFAULT_SPEED);
+    allSteppers[i]->setAcceleration(STEPPER_DEFAULT_ACCEL);
     allSteppers[i]->setCurrentPosition((int)(fullRev*STEPPER_DEFAULT_POS_FRACTION));
   }
   
