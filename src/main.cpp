@@ -29,15 +29,15 @@ struct move_data {
 
   move_data(uint16_t position, int8_t dir, uint8_t sub_id, bool is_minute_pointer, uint16_t speed)      
   {      
-    this->speed = speed;  
+    this->speed = speed;   
     this->position = position;     
     this->dir = dir;      
     this->sub_id  = sub_id;   
     this->is_minute_pointer = is_minute_pointer;   
-  }     
+  }       
 };
 
-move_data move_i2c;
+struct move_data move_i2c = {0, 0, 0, 0, 0};
 
 //step pin, dir pin, hall pin, hall offset, number of steps per revolution
 AccelStepper x1m(26, 27, fullRev);
