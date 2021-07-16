@@ -19,7 +19,7 @@ const int fullRev = 360*12;
 
 //step pin, dir pin, hall pin, hall offset, number of steps per revolution
 AccelStepper x1m(26, 27, fullRev);
-AccelStepper x1h(22, 25, fullRev);
+AccelStepper x1h(14, 25, fullRev);
 AccelStepper x2m(4,  5,  fullRev);
 AccelStepper x2h(2,  3,  fullRev);
 AccelStepper x3m(10, 11, fullRev);
@@ -52,7 +52,7 @@ struct move_data {
 
 move_data move_i2c = {0, 0, 0, 0, 0};
 
-const uint8_t address = 10; //1-16, 10 is at top left from clockface, row first
+const uint8_t address = 11; //1-16, 10 is at top left from clockface, row first
 //i2c pins used, from the circuit board
 const int sda = 15;
 const int scl = 16;
@@ -72,8 +72,6 @@ void blink(int how_often, int delay_t){
 void setup() {
   // initialize digital pin PB1 as an output.
   pinMode(33, OUTPUT);
-  
-  blink(2, 1000);
 
   for(int i = 0; i < NUM_STEPPERS; i++){
     allSteppers[i]->setPinModesDriver();
@@ -83,22 +81,16 @@ void setup() {
     allSteppers[i]->moveToShortestPath(0);
   }   
 
-  blink(2, 500);
-
   //Initialize as i2c slave
   Wire.setSCL(scl);
-  Wire.setSDA(sda);
+  Wire.setSDA(sda);  
   Wire.begin(address); 
   Wire.onReceive(i2cReceive);
-  Wire.setClock(100000);
-
-  blink(2, 1000);
 }
 
 // the loop function runs over and over again forever
 void loop() {    
   if(i2c_flag){
-    blink(30, 100);
     i2c_flag = false;
   
     AccelStepper *stepper;

@@ -270,7 +270,6 @@ AccelStepper::AccelStepper(uint8_t pin1, uint8_t pin2, uint16_t stepsPerRevoluti
     this->hallPin = hallPin;
     this->stepsPerRevolution = stepsPerRevolution;
     this->hallOffset = hallOffset;
-    _hallWasOff = digitalRead(hallPin);
     _currZeroRevolution = 0;
     _isZeroed = false;
 
