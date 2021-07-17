@@ -18,7 +18,9 @@ void blink(int how_often, int delay_t);
 const int fullRev = 360*12;
 
 //step pin, dir pin, hall pin, hall offset, number of steps per revolution
-AccelStepper x1m(26, 27, fullRev);
+//pcb rev 2
+AccelStepper x1m(26, 27, fullRev);//normal green
+//AccelStepper x1m(1, 0, fullRev);//broken maple cutoff from black rev 1 pcb
 AccelStepper x1h(14, 25, fullRev);
 AccelStepper x2m(4,  5,  fullRev);
 AccelStepper x2h(2,  3,  fullRev);
@@ -26,6 +28,16 @@ AccelStepper x3m(10, 11, fullRev);
 AccelStepper x3h(12, 13, fullRev);
 AccelStepper x4m(8,  9,  fullRev);
 AccelStepper x4h(7,  6,  fullRev);
+
+//pcb rev 1
+//AccelStepper x1m(12, 13, fullRev);
+//AccelStepper x1h(10, 11, fullRev);
+//AccelStepper x2m(9,  8,  fullRev);
+//AccelStepper x2h(7,  6,  fullRev);
+//AccelStepper x3m(3,  2,  fullRev);
+//AccelStepper x3h(4,  5,  fullRev);
+//AccelStepper x4m(30, 31, fullRev);
+//AccelStepper x4h(29, 28, fullRev);
 
 AccelStepper *allSteppers[] = {&x1m, &x1h, &x2m, &x2h, &x3m, &x3h, &x4m, &x4h};
 
@@ -59,20 +71,8 @@ const int scl = 16;
 
 bool i2c_flag = false;
 
-void blink(int how_often, int delay_t){
-  for(int i = 0; i < how_often; i++){
-    digitalWrite(33, HIGH);   // turn the LED on (HIGH is the voltage level)
-    delay(delay_t);              // wait for a second
-    digitalWrite(33, LOW);    // turn the LED off by making the voltage LOW
-    delay(delay_t); 
-  }
-}
-
 // the setup function runs once when you press reset or power the board
 void setup() {
-  // initialize digital pin PB1 as an output.
-  pinMode(33, OUTPUT);
-
   for(int i = 0; i < NUM_STEPPERS; i++){
     allSteppers[i]->setPinModesDriver();
     allSteppers[i]->setMaxSpeed(STEPPER_DEFAULT_SPEED);
