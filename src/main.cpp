@@ -84,6 +84,7 @@ void setup() {
   //Initialize as i2c slave
   Wire.setSCL(scl);
   Wire.setSDA(sda);  
+  Wire.setClock(100000);  
   Wire.begin(address); 
   Wire.onReceive(i2cReceive);
 }
