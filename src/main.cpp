@@ -11,33 +11,31 @@
 #define STEPPER_DEFAULT_ACCEL 1100
 #define STEPPER_DEFAULT_POS_FRACTION 0.5 //at 6o'clock position
 
-void blink(int how_often);
 void i2cReceive(int numBytesReceived);
-void blink(int how_often, int delay_t);
 
 const int fullRev = 360*12;
 
 //step pin, dir pin, hall pin, hall offset, number of steps per revolution
 //pcb rev 2
-AccelStepper x1m(26, 27, fullRev);//normal green
-//AccelStepper x1m(1, 0, fullRev);//broken maple cutoff from black rev 1 pcb
-AccelStepper x1h(14, 25, fullRev);
-AccelStepper x2m(4,  5,  fullRev);
-AccelStepper x2h(2,  3,  fullRev);
-AccelStepper x3m(10, 11, fullRev);
-AccelStepper x3h(12, 13, fullRev);
-AccelStepper x4m(8,  9,  fullRev);
-AccelStepper x4h(7,  6,  fullRev);
+// AccelStepper x1m(26, 27, fullRev);//normal green
+// //AccelStepper x1m(17, 20, fullRev);//broken maple cutoff from black rev 1 pcb
+// AccelStepper x1h(14, 25, fullRev);
+// AccelStepper x2m(4,  5,  fullRev);
+// AccelStepper x2h(2,  3,  fullRev);
+// AccelStepper x3m(10, 11, fullRev);
+// AccelStepper x3h(12, 13, fullRev);
+// AccelStepper x4m(8,  9,  fullRev);
+// AccelStepper x4h(7,  6,  fullRev);
 
 //pcb rev 1
-//AccelStepper x1m(12, 13, fullRev);
-//AccelStepper x1h(10, 11, fullRev);
-//AccelStepper x2m(9,  8,  fullRev);
-//AccelStepper x2h(7,  6,  fullRev);
-//AccelStepper x3m(3,  2,  fullRev);
-//AccelStepper x3h(4,  5,  fullRev);
-//AccelStepper x4m(30, 31, fullRev);
-//AccelStepper x4h(29, 28, fullRev);
+AccelStepper x1m(12, 13, fullRev);
+AccelStepper x1h(10, 11, fullRev);
+AccelStepper x2m(9,  8,  fullRev);
+AccelStepper x2h(7,  6,  fullRev);
+AccelStepper x3m(3,  2,  fullRev);
+AccelStepper x3h(4,  5,  fullRev);
+AccelStepper x4m(30, 31, fullRev);
+AccelStepper x4h(29, 28, fullRev);
 
 AccelStepper *allSteppers[] = {&x1m, &x1h, &x2m, &x2h, &x3m, &x3h, &x4m, &x4h};
 
@@ -64,7 +62,7 @@ struct move_data {
 
 move_data move_i2c = {0, 0, 0, 0, 0};
 
-const uint8_t address = 11; //1-16, 10 is at top left from clockface, row first
+const uint8_t address = 13; //[12;17], 12 is at top left from clockface, row first
 //i2c pins used, from the circuit board
 const int sda = 15;
 const int scl = 16;
@@ -79,12 +77,12 @@ void setup() {
     allSteppers[i]->setAcceleration(STEPPER_DEFAULT_ACCEL);
     allSteppers[i]->setCurrentPosition((int)(fullRev*STEPPER_DEFAULT_POS_FRACTION));
     allSteppers[i]->moveToShortestPath(0);
-  }   
+  }
 
   //Initialize as i2c slave
   Wire.setSCL(scl);
   Wire.setSDA(sda);  
-  Wire.setClock(100000);  
+  //Wire.setClock(100000);  brakes it for some reason
   Wire.begin(address); 
   Wire.onReceive(i2cReceive);
 }
