@@ -15,7 +15,7 @@
 #define CMD_COUNT 6
 #define CMD_QUEUE_LENGTH 16
 
-#define I2C_ADDRESS 13//[12;17], 12 is at top left from clockface, row first
+#define I2C_ADDRESS 15//[12;17], 12 is at top left from clockface, row first
 #define I2C_SDA_PIN 15
 #define I2C_SCL_PIN 16
 #define ENABLE_PIN 17
@@ -58,32 +58,32 @@ enum cmd_identifier {set_speed = 0, set_accel = 1, moveTo = 2, move = 3, stop = 
 
 struct set_speed_datastruct {
   uint16_t speed; //2bytes
-  uint8_t sub_id; //1byte
+  uint8_t stepper_id; //1byte
 };
 
 struct set_accel_datastruct {
   uint16_t accel; //2bytes
-  uint8_t sub_id; //1byte
+  uint8_t stepper_id; //1byte
 };
 
 struct moveTo_datastruct {
   uint16_t position; //2bytes
   int8_t dir; // -1 ccw, 0 shortest path, 1 cw 1byte
-  uint8_t sub_id; //1byte
+  uint8_t stepper_id; //1byte
 };
 
 struct move_datastruct {
   uint16_t distance; //2bytes
   int8_t dir; // -1 ccw, 1 cw 1byte
-  uint8_t sub_id; //1byte  
+  uint8_t stepper_id; //1byte  
 };
 
 struct stop_datastruct {
-  uint8_t sub_id; //1byte
+  uint8_t stepper_id; //1byte
 };
 
 struct falling_pointer_datastruct {
-  uint8_t sub_id; //1byte
+  uint8_t stepper_id; //1byte
 };
 
 cppQueue	set_speed_queue(sizeof(set_speed_datastruct), CMD_QUEUE_LENGTH, FIFO, true);
@@ -150,7 +150,7 @@ void loop() {
 #pragma region i2c handlers
 
 void i2c_receive(int numBytesReceived) {
-  uint8_t cmd_id = 256;
+  uint8_t cmd_id = 0;
   Wire.readBytes((byte*) &cmd_id, 1);
 
   byte i2c_buffer[numBytesReceived - 1];
@@ -160,13 +160,13 @@ void i2c_receive(int numBytesReceived) {
 }
 
 void i2c_request() {
+  byte is_running_bitmap = 0; // 1 if its still running to target
   for(int i = 0; i < NUM_STEPPERS; i++){
     if(steppers[i]->isRunning()){
-      Wire.write(false);
-      return;
+      bitSet(is_running_bitmap, i);
     }
   }
-  Wire.write(true);
+  Wire.write(is_running_bitmap);
 }
 
 #pragma endregion
@@ -179,7 +179,7 @@ void set_speed_handler(){
   set_speed_datastruct set_speed_data;
   i2c_cmd_queues[0].pop(&set_speed_data);
 
-  steppers[set_speed_data.sub_id]->setMaxSpeed(set_speed_data.speed);
+  steppers[set_speed_data.stepper_id]->setMaxSpeed(set_speed_data.speed);
 }
 
 void set_accel_handler(){
@@ -188,7 +188,7 @@ void set_accel_handler(){
   set_accel_datastruct set_accel_data;
   i2c_cmd_queues[cmd_id].pop(&set_accel_data);
 
-  steppers[set_accel_data.sub_id]->setMaxSpeed(set_accel_data.accel);
+  steppers[set_accel_data.stepper_id]->setMaxSpeed(set_accel_data.accel);
 }
 
 void moveTo_handler(){
@@ -199,9 +199,9 @@ void moveTo_handler(){
 
   //movement direction, shortest, left or right
   if(moveTo_data.dir == 0){ //fix the handling of directions
-    steppers[moveTo_data.sub_id]->moveToShortestPath(moveTo_data.position);
+    steppers[moveTo_data.stepper_id]->moveToShortestPath(moveTo_data.position);
   }else{
-    steppers[moveTo_data.sub_id]->moveToSingleRevolutionDir(moveTo_data.position, moveTo_data.dir);
+    steppers[moveTo_data.stepper_id]->moveToSingleRevolutionDir(moveTo_data.position, moveTo_data.dir);
   }
 }
 
@@ -211,7 +211,7 @@ void move_handler(){
   move_datastruct move_data;
   i2c_cmd_queues[cmd_id].pop(&move_data);
 
-  steppers[move_data.sub_id]->move(move_data.distance * move_data.dir);
+  steppers[move_data.stepper_id]->move(move_data.distance * move_data.dir);
 }
 
 void stop_handler(){
@@ -220,7 +220,7 @@ void stop_handler(){
   stop_datastruct stop_data;
   i2c_cmd_queues[cmd_id].pop(&stop_data);
 
-  steppers[stop_data.sub_id]->stop();
+  steppers[stop_data.stepper_id]->stop();
 }
 
 void falling_pointer_handler(){
