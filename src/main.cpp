@@ -6,7 +6,6 @@
 #define NUM_STEPPERS 8
 #define NUM_STEPPERS_H 4
 #define NUM_STEPPERS_M 4
-#define LED 33
 #define STEPPER_DEFAULT_SPEED 700
 #define STEPPER_DEFAULT_ACCEL 300
 #define STEPS_PER_REVOLUTION 4320 //360*12
@@ -15,7 +14,7 @@
 #define CMD_COUNT 6
 #define CMD_QUEUE_LENGTH 16
 
-#define I2C_ADDRESS 15//[12;17], 12 is at top left from clockface, row first
+#define I2C_ADDRESS 13//[12;17], 12 is at top right from clockface, row first
 #define I2C_SDA_PIN 15
 #define I2C_SCL_PIN 16
 #define ENABLE_PIN 17
@@ -163,7 +162,7 @@ void i2c_request() {
   byte is_running_bitmap = 0; // 1 if its still running to target
   for(int i = 0; i < NUM_STEPPERS; i++){
     if(steppers[i]->isRunning()){
-      bitSet(is_running_bitmap, i);
+      is_running_bitmap = (1 << i) | is_running_bitmap;
     }
   }
   Wire.write(is_running_bitmap);
@@ -188,7 +187,7 @@ void set_accel_handler(){
   set_accel_datastruct set_accel_data;
   i2c_cmd_queues[cmd_id].pop(&set_accel_data);
 
-  steppers[set_accel_data.stepper_id]->setMaxSpeed(set_accel_data.accel);
+  steppers[set_accel_data.stepper_id]->setAcceleration(set_accel_data.accel);
 }
 
 void moveTo_handler(){
