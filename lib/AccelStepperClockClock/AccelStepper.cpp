@@ -60,7 +60,7 @@ void AccelStepper::moveToShortestPath(long absolute)
     move(relative);
 }
 
-void AccelStepper::moveToSingleRevolutionDir(long absolute, uint8_t dir)
+void AccelStepper::moveToSingleRevolutionDir(long absolute, int8_t dir)
 {
     absolute = absolute % stepsPerRevolution;
     //to deal with negative absolute positions
@@ -78,7 +78,7 @@ void AccelStepper::moveToSingleRevolutionDir(long absolute, uint8_t dir)
     short relative = absolute - relCurrentPos;
 
     //fixed direction
-    if (dir == 0){ //ccw direction
+    if (dir == -1){ //ccw direction
         if (relative > 0){
             relative = relative - stepsPerRevolution;
         }
