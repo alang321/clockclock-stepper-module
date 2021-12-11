@@ -60,7 +60,7 @@ void AccelStepper::moveToShortestPath(long absolute)
     move(relative);
 }
 
-void AccelStepper::moveToSingleRevolutionDir(long absolute, int8_t dir)
+void AccelStepper::moveToSingleRevolution(long absolute, int8_t dir)
 {
     absolute = absolute % stepsPerRevolution;
     //to deal with negative absolute positions

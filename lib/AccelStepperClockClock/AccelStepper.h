@@ -390,7 +390,7 @@ public:
     /// moves to a position from 0 - (steps per revolution - 1)
     /// takes fixed direction
     /// 1 is cw, -1 is ccw
-    void    moveToSingleRevolutionDir(long absolute, int8_t dir);
+    void    moveToSingleRevolution(long absolute, int8_t dir);
 
 
     /// Set the target position relative to the current position.

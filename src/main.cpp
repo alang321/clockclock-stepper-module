@@ -14,7 +14,7 @@
 #define CMD_COUNT 6
 #define CMD_QUEUE_LENGTH 16
 
-#define I2C_ADDRESS 13//[12;17], 12 is at top right from clockface, row first
+#define I2C_ADDRESS 15//[12;17], 12 is at top right from clockface, row first
 #define I2C_SDA_PIN 15
 #define I2C_SCL_PIN 16
 #define ENABLE_PIN 17
@@ -57,32 +57,32 @@ enum cmd_identifier {set_speed = 0, set_accel = 1, moveTo = 2, move = 3, stop = 
 
 struct set_speed_datastruct {
   uint16_t speed; //2bytes
-  uint8_t stepper_id; //1byte
+  int8_t stepper_id; //if stepper id is -1 it applys to all steppers 1byte 
 };
 
 struct set_accel_datastruct {
   uint16_t accel; //2bytes
-  uint8_t stepper_id; //1byte
+  int8_t stepper_id; //if stepper id is -1 it applys to all steppers 1byte 
 };
 
 struct moveTo_datastruct {
   uint16_t position; //2bytes
   int8_t dir; // -1 ccw, 0 shortest path, 1 cw 1byte
-  uint8_t stepper_id; //1byte
+  int8_t stepper_id; //if stepper id is -1 it applys to all steppers 1byte 
 };
 
 struct move_datastruct {
   uint16_t distance; //2bytes
   int8_t dir; // -1 ccw, 1 cw 1byte
-  uint8_t stepper_id; //1byte  
+  int8_t stepper_id; //if stepper id is -1 it applys to all steppers 1byte 
 };
 
 struct stop_datastruct {
-  uint8_t stepper_id; //1byte
+  int8_t stepper_id; //if stepper id is -1 it applys to all steppers 1byte 
 };
 
 struct falling_pointer_datastruct {
-  uint8_t stepper_id; //1byte
+  int8_t stepper_id; //if stepper id is -1 it applys to all steppers 1byte 
 };
 
 cppQueue	set_speed_queue(sizeof(set_speed_datastruct), CMD_QUEUE_LENGTH, FIFO, true);
@@ -108,7 +108,7 @@ void setup() {
     h_steppers[i]->setMaxSpeed(STEPPER_DEFAULT_SPEED);
     h_steppers[i]->setAcceleration(STEPPER_DEFAULT_ACCEL);
     h_steppers[i]->setCurrentPosition((int)(STEPS_PER_REVOLUTION*STEPPER_DEFAULT_POS_FRACTION));
-    h_steppers[i]->moveToSingleRevolutionDir(0, -1);
+    h_steppers[i]->moveToSingleRevolution(0, -1);
   }
 
   for(int i = 0; i < NUM_STEPPERS_M; i++){
@@ -116,7 +116,7 @@ void setup() {
     m_steppers[i]->setMaxSpeed(STEPPER_DEFAULT_SPEED);
     m_steppers[i]->setAcceleration(STEPPER_DEFAULT_ACCEL);
     m_steppers[i]->setCurrentPosition((int)(STEPS_PER_REVOLUTION*STEPPER_DEFAULT_POS_FRACTION));
-    m_steppers[i]->moveToSingleRevolutionDir(0, 1);
+    m_steppers[i]->moveToSingleRevolution(0, 1);
   }
 
   delay(5);
@@ -135,12 +135,12 @@ void setup() {
 // the loop function runs over and over again forever
 void loop() {
   for(int i = 0; i < CMD_COUNT; i++){
-	  if(!i2c_cmd_queues[i].isEmpty()){
+    if(!i2c_cmd_queues[i].isEmpty()){
       i2c_cmd_handlers[i]();
     }
   }
   for(int i = 0; i < NUM_STEPPERS; i++){
-	  steppers[i]->run();
+    steppers[i]->run();
   }
 }
 
@@ -176,9 +176,15 @@ void set_speed_handler(){
   int cmd_id = set_speed;
   
   set_speed_datastruct set_speed_data;
-  i2c_cmd_queues[0].pop(&set_speed_data);
+  i2c_cmd_queues[cmd_id].pop(&set_speed_data);
 
-  steppers[set_speed_data.stepper_id]->setMaxSpeed(set_speed_data.speed);
+  if(set_speed_data.stepper_id == -1){
+    for(int i = 0; i < NUM_STEPPERS; i++){
+      steppers[i]->setMaxSpeed(set_speed_data.speed);
+    }
+  }else{
+    steppers[set_speed_data.stepper_id]->setMaxSpeed(set_speed_data.speed);
+  }
 }
 
 void set_accel_handler(){
@@ -187,7 +193,13 @@ void set_accel_handler(){
   set_accel_datastruct set_accel_data;
   i2c_cmd_queues[cmd_id].pop(&set_accel_data);
 
-  steppers[set_accel_data.stepper_id]->setAcceleration(set_accel_data.accel);
+  if(set_accel_data.stepper_id == -1){
+    for(int i = 0; i < NUM_STEPPERS; i++){
+      steppers[i]->setAcceleration(set_accel_data.accel);
+    }
+  }else{
+    steppers[set_accel_data.stepper_id]->setAcceleration(set_accel_data.accel);
+  }
 }
 
 void moveTo_handler(){
@@ -198,9 +210,21 @@ void moveTo_handler(){
 
   //movement direction, shortest, left or right
   if(moveTo_data.dir == 0){ //fix the handling of directions
-    steppers[moveTo_data.stepper_id]->moveToShortestPath(moveTo_data.position);
+    if(moveTo_data.stepper_id == -1){
+      for(int i = 0; i < NUM_STEPPERS; i++){
+        steppers[i]->moveToShortestPath(moveTo_data.position);
+      }
+    }else{
+      steppers[moveTo_data.stepper_id]->moveToShortestPath(moveTo_data.position);
+    }
   }else{
-    steppers[moveTo_data.stepper_id]->moveToSingleRevolutionDir(moveTo_data.position, moveTo_data.dir);
+    if(moveTo_data.stepper_id == -1){
+      for(int i = 0; i < NUM_STEPPERS; i++){
+        steppers[i]->moveToSingleRevolution(moveTo_data.position, moveTo_data.dir);
+      }
+    }else{
+      steppers[moveTo_data.stepper_id]->moveToSingleRevolution(moveTo_data.position, moveTo_data.dir);
+    }
   }
 }
 
@@ -210,7 +234,13 @@ void move_handler(){
   move_datastruct move_data;
   i2c_cmd_queues[cmd_id].pop(&move_data);
 
-  steppers[move_data.stepper_id]->move(move_data.distance * move_data.dir);
+  if(move_data.stepper_id == -1){
+    for(int i = 0; i < NUM_STEPPERS; i++){
+      steppers[i]->move(move_data.distance * move_data.dir);
+    }
+  }else{
+    steppers[move_data.stepper_id]->move(move_data.distance * move_data.dir);
+  }
 }
 
 void stop_handler(){
@@ -219,7 +249,13 @@ void stop_handler(){
   stop_datastruct stop_data;
   i2c_cmd_queues[cmd_id].pop(&stop_data);
 
-  steppers[stop_data.stepper_id]->stop();
+  if(stop_data.stepper_id == -1){
+    for(int i = 0; i < NUM_STEPPERS; i++){
+      steppers[i]->stop();
+    }
+  }else{
+    steppers[stop_data.stepper_id]->stop();
+  }
 }
 
 void falling_pointer_handler(){
