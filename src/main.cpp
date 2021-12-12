@@ -14,9 +14,10 @@
 #define CMD_COUNT 6
 #define CMD_QUEUE_LENGTH 16
 
-#define I2C_ADDRESS 17 // [12;17], 12 is at top right from clockface, row first
+#define I2C_ADDRESS 14 // [12;17], 12 is at top right from clockface, row first
 #define I2C_SDA_PIN 15
 #define I2C_SCL_PIN 16
+//#define ENABLE_PIN 18 // broken pcb
 #define ENABLE_PIN 17
 
 //i2c handlers
@@ -31,6 +32,7 @@ void moveTo_handler();
 void move_handler();
 void stop_handler();
 void falling_pointer_handler();
+void moveTo_extra_revs_handler();
 
 #pragma region accel stepper defintion
 
@@ -54,7 +56,7 @@ AccelStepper *m_steppers[] = {&x1m, &x2m, &x3m, &x4m};
 
 #pragma region i2c commands
 
-enum cmd_identifier {enable_driver = 0, set_speed = 1,set_accel = 2, moveTo = 3, move = 4, stop = 5, falling_pointer = 6};
+enum cmd_identifier {enable_driver = 0, set_speed = 1, set_accel = 2, moveTo = 3, moveTo_extra_revs = 4, move = 5, stop = 6, falling_pointer = 7};
 
 struct enable_driver_datastruct {
   bool enable; //1bytes # true enables the driver, false disables it
@@ -76,6 +78,13 @@ struct moveTo_datastruct {
   int8_t stepper_id; //if stepper id is -1 it applys to all steppers 1byte 
 };
 
+struct moveTo_extra_revs_datastruct { // moveTo but with an extra variable that allows rotating the stepper a variable extra times before reaching  target destination
+  uint16_t position; //2bytes
+  int8_t dir; // -1 ccw, 1 cw 1byte
+  uint8_t extra_revs; //1bytes
+  int8_t stepper_id; //if stepper id is -1 it applys to all steppers 1byte 
+};
+
 struct move_datastruct {
   uint16_t distance; //2bytes
   int8_t dir; // -1 ccw, 1 cw 1byte
@@ -90,19 +99,20 @@ struct falling_pointer_datastruct {
   int8_t stepper_id; //if stepper id is -1 it applys to all steppers 1byte 
 };
 
-cppQueue	enable_driver_queue(sizeof(set_speed_datastruct), CMD_QUEUE_LENGTH, FIFO, true);
+cppQueue	enable_driver_queue(sizeof(enable_driver_datastruct), CMD_QUEUE_LENGTH, FIFO, true);
 cppQueue	set_speed_queue(sizeof(set_speed_datastruct), CMD_QUEUE_LENGTH, FIFO, true);
 cppQueue	set_accel_queue(sizeof(set_accel_datastruct), CMD_QUEUE_LENGTH, FIFO, true);
 cppQueue	moveTo_queue(sizeof(moveTo_datastruct), CMD_QUEUE_LENGTH, FIFO, true);
+cppQueue	moveTo_extra_revs_queue(sizeof(moveTo_extra_revs_datastruct), CMD_QUEUE_LENGTH, FIFO, true);
 cppQueue	move_queue(sizeof(move_datastruct), CMD_QUEUE_LENGTH, FIFO, true);
 cppQueue	stop_queue(sizeof(stop_datastruct), CMD_QUEUE_LENGTH, FIFO, true);
 cppQueue	falling_pointer_queue(sizeof(falling_pointer_datastruct), CMD_QUEUE_LENGTH, FIFO, true);
 
-cppQueue i2c_cmd_queues[] = {enable_driver_queue, set_speed_queue, set_accel_queue, moveTo_queue, move_queue, stop_queue, falling_pointer_queue};
+cppQueue i2c_cmd_queues[] = {enable_driver_queue, set_speed_queue, set_accel_queue, moveTo_queue, moveTo_extra_revs_queue, move_queue, stop_queue, falling_pointer_queue};
 
 typedef void (*i2c_cmd_handler) ();
 
-i2c_cmd_handler i2c_cmd_handlers[] = {enable_driver_handler, set_speed_handler, set_accel_handler, moveTo_handler, move_handler, stop_handler, falling_pointer_handler};
+i2c_cmd_handler i2c_cmd_handlers[] = {enable_driver_handler, set_speed_handler, set_accel_handler, moveTo_handler, moveTo_extra_revs_handler, move_handler, stop_handler, falling_pointer_handler};
 
 #pragma endregion
 
@@ -191,7 +201,6 @@ void enable_driver_handler(){
   }
 }
 
-
 void set_speed_handler(){
   int cmd_id = set_speed;
   
@@ -245,6 +254,22 @@ void moveTo_handler(){
     }else{
       steppers[moveTo_data.stepper_id]->moveToSingleRevolution(moveTo_data.position, moveTo_data.dir);
     }
+  }
+}
+
+void moveTo_extra_revs_handler(){
+  int cmd_id = moveTo_extra_revs;
+  
+  moveTo_extra_revs_datastruct moveTo_extra_revs_data;
+  i2c_cmd_queues[cmd_id].pop(&moveTo_extra_revs_data);
+
+  //movement direction, shortest, left or right
+  if(moveTo_extra_revs_data.stepper_id == -1){
+    for(int i = 0; i < NUM_STEPPERS; i++){
+      steppers[i]->moveToExtraRevolutions(moveTo_extra_revs_data.position, moveTo_extra_revs_data.dir, moveTo_extra_revs_data.extra_revs);
+    }
+  }else{
+      steppers[moveTo_extra_revs_data.stepper_id]->moveToExtraRevolutions(moveTo_extra_revs_data.position, moveTo_extra_revs_data.dir, moveTo_extra_revs_data.extra_revs);
   }
 }
 

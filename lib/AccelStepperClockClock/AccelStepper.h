@@ -392,6 +392,11 @@ public:
     /// 1 is cw, -1 is ccw
     void    moveToSingleRevolution(long absolute, int8_t dir);
 
+    /// moves to a position from 0 - (steps per revolution - 1)
+    /// takes fixed direction
+    /// 1 is cw, -1 is ccw
+    void    moveToExtraRevolutions(long absolute, int8_t dir, uint8_t extra_revs);
+
 
     /// Set the target position relative to the current position.
     /// \param[in] relative The desired position relative to the current position. Negative is

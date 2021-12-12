@@ -91,6 +91,37 @@ void AccelStepper::moveToSingleRevolution(long absolute, int8_t dir)
     move(relative);
 }
 
+void AccelStepper::moveToExtraRevolutions(long absolute, int8_t dir, uint8_t extra_revs) // shitty name, like move to single revolution but allows multiple extra rotations
+{
+    absolute = absolute % stepsPerRevolution;
+    //to deal with negative absolute positions
+    if(absolute < 0){
+        absolute = stepsPerRevolution + absolute;
+    }
+
+    short relCurrentPos = _currentPos % stepsPerRevolution;
+
+    //to deal with negative current positions
+    if(relCurrentPos < 0){
+        relCurrentPos = stepsPerRevolution + relCurrentPos;
+    }
+
+    short relative = absolute - relCurrentPos;
+
+    //fixed direction
+    if (dir == -1){ //ccw direction
+        if (relative > 0){
+            relative = relative - stepsPerRevolution + stepsPerRevolution * extra_revs;
+        }
+    } else { //cw direction
+        if (relative < 0){
+            relative = stepsPerRevolution + relative + stepsPerRevolution * extra_revs;
+        }
+    }
+
+    move(relative);
+}
+
 void AccelStepper::move(long relative)
 {
     moveTo(_currentPos + relative);
