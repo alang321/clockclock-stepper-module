@@ -111,15 +111,15 @@ void AccelStepper::moveToExtraRevolutions(long absolute, int8_t dir, uint8_t ext
     //fixed direction
     if (dir == -1){ //ccw direction
         if (relative > 0){
-            relative = relative - stepsPerRevolution + stepsPerRevolution * extra_revs;
+            relative = relative - stepsPerRevolution;
         }
     } else { //cw direction
         if (relative < 0){
-            relative = stepsPerRevolution + relative + stepsPerRevolution * extra_revs;
+            relative = stepsPerRevolution + relative;
         }
     }
 
-    move(relative);
+    move(relative + stepsPerRevolution * extra_revs * dir);
 }
 
 void AccelStepper::move(long relative)
