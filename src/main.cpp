@@ -304,7 +304,12 @@ void stop_handler(){
 }
 
 void falling_pointer_handler(){
-  //todo : implement
+  int cmd_id = falling_pointer;
+
+  falling_pointer_datastruct falling_pointer_data;
+  i2c_cmd_queues[cmd_id].pop(&falling_pointer_data);
+
+  // todo : implement
 }
 
 #pragma endregion
