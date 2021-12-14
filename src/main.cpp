@@ -11,10 +11,10 @@
 #define STEPS_PER_REVOLUTION 4320 //360*12
 #define STEPPER_DEFAULT_POS_FRACTION 0.5 //at 6o'clock position
 
-#define CMD_COUNT 6
+#define CMD_COUNT 8
 #define CMD_QUEUE_LENGTH 16
 
-#define I2C_ADDRESS 14 // [12;17], 12 is at top right from clockface, row first
+#define I2C_ADDRESS 13 // [12;17], 12 is at top right from clockface, row first
 #define I2C_SDA_PIN 15
 #define I2C_SCL_PIN 16
 //#define ENABLE_PIN 18 // broken pcb
