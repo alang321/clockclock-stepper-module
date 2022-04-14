@@ -3,6 +3,8 @@
 #include <Wire.h>
 #include <cppQueue.h>
 
+#define BROKEN_PCB false
+
 #define NUM_STEPPERS 8
 #define NUM_STEPPERS_H 4
 #define NUM_STEPPERS_M 4
@@ -17,8 +19,12 @@
 #define I2C_ADDRESS 16 // [12;17], 12 is at top right from clockface, row first
 #define I2C_SDA_PIN 15
 #define I2C_SCL_PIN 16
-//#define ENABLE_PIN 18 // broken pcb
-#define ENABLE_PIN 17
+
+#if BROKEN_PCB
+  #define ENABLE_PIN 18 // broken pcb
+#else
+  #define ENABLE_PIN 17
+#endif
 
 //i2c handlers
 void i2c_receive(int numBytesReceived);
@@ -38,8 +44,12 @@ void moveTo_extra_revs_handler();
 
 //step pin, dir pin, number of steps per revolution
 //pcb rev 2
+
+#if BROKEN_PCB
+AccelStepper x1m(17, 20, STEPS_PER_REVOLUTION);//broken maple cutoff from black rev 1 pcb
+#else
 AccelStepper x1m(26, 27, STEPS_PER_REVOLUTION);//normal green
-//AccelStepper x1m(17, 20, STEPS_PER_REVOLUTION);//broken maple cutoff from black rev 1 pcb
+#endif
 AccelStepper x1h(14, 25, STEPS_PER_REVOLUTION);
 AccelStepper x2m(4,  5,  STEPS_PER_REVOLUTION);
 AccelStepper x2h(2,  3,  STEPS_PER_REVOLUTION);
