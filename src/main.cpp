@@ -14,7 +14,7 @@
 #define CMD_COUNT 8
 #define CMD_QUEUE_LENGTH 16
 
-#define I2C_ADDRESS 13 // [12;17], 12 is at top right from clockface, row first
+#define I2C_ADDRESS 16 // [12;17], 12 is at top right from clockface, row first
 #define I2C_SDA_PIN 15
 #define I2C_SCL_PIN 16
 //#define ENABLE_PIN 18 // broken pcb

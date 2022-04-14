@@ -124,7 +124,7 @@ void AccelStepper::moveToExtraRevolutions(long absolute, int8_t dir, uint8_t ext
 
 void AccelStepper::move(long relative)
 {
-    moveTo(_currentPos + relative);
+    moveTo(_targetPos + relative);
 }
 
 // Implements steps according to the current step interval
