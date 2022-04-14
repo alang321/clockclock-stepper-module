@@ -16,7 +16,7 @@
 #define CMD_COUNT 8
 #define CMD_QUEUE_LENGTH 16
 
-#define I2C_ADDRESS 16 // [12;17], 12 is at top right from clockface, row first
+#define I2C_ADDRESS 13 // [12;17], 12 is at top right from clockface, row first
 #define I2C_SDA_PIN 15
 #define I2C_SCL_PIN 16
 
@@ -291,10 +291,10 @@ void move_handler(){
 
   if(move_data.stepper_id == -1){
     for(int i = 0; i < NUM_STEPPERS; i++){
-      steppers[i]->move(move_data.distance * move_data.dir);
+      steppers[i]->moveTarget(move_data.distance * move_data.dir);
     }
   }else{
-    steppers[move_data.stepper_id]->move(move_data.distance * move_data.dir);
+    steppers[move_data.stepper_id]->moveTarget(move_data.distance * move_data.dir);
   }
 }
 

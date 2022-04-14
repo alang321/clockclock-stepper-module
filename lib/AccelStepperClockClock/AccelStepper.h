@@ -403,6 +403,9 @@ public:
     /// anticlockwise from the current position.
     void    move(long relative);
 
+    /// set the position relative to the current target position
+    void    moveTarget(long relative);
+
     /// Poll the motor and step it if a step is due, implementing
     /// accelerations and decelerations to achieve the target position. You must call this as
     /// frequently as possible, but at least once per minimum step time interval,
