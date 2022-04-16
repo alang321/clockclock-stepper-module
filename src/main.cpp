@@ -3,7 +3,11 @@
 #include <Wire.h>
 #include <cppQueue.h>
 
+
+// start to be configured
 #define BROKEN_PCB false
+#define I2C_ADDRESS 12 // [12;17], 12 is at top left from clockface, row first
+// end
 
 #define NUM_STEPPERS 8
 #define NUM_STEPPERS_H 4
@@ -16,7 +20,6 @@
 #define CMD_COUNT 8
 #define CMD_QUEUE_LENGTH 16
 
-#define I2C_ADDRESS 13 // [12;17], 12 is at top right from clockface, row first
 #define I2C_SDA_PIN 15
 #define I2C_SCL_PIN 16
 
