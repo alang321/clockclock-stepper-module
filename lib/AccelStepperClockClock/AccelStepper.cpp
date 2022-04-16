@@ -20,8 +20,49 @@ void dump(uint8_t* p, int l)
 }
 #endif
 
+AccelStepper::AccelStepper(uint8_t pin1, uint8_t pin2, uint16_t stepsPerRevolution)
+{
+    _interface = DRIVER;
+    _currentPos = 0;
+    _targetPos = 0;
+    _speed = 0.0;
+    _maxSpeed = 1.0;
+    _acceleration = 0.0;
+    _sqrt_twoa = 1.0;
+    _stepInterval = 0;
+    _minPulseWidth = 1;
+    _enablePin = 0xff;
+    _lastStepTime = 0;
+    this->pin[0] = pin1;
+    this->pin[1] = pin2;
+    this->pin[2] = 0;
+    this->pin[3] = 0;
+    _enableInverted = false;
+    this->stepsPerRevolution = stepsPerRevolution;
+
+    // wiggle
+    this->isWiggling = false;
+    this->_wiggleStartPos = 0;
+    this->_wiggleRelative = 0;
+
+    // NEW
+    _n = 0;
+    _c0 = 0.0;
+    _cn = 0.0;
+    _cmin = 1.0;
+    _direction = DIRECTION_CCW;
+
+    int i;
+    for (i = 0; i < 4; i++)
+        _pinInverted[i] = 0;
+    // Some reasonable default
+    setAcceleration(1);
+}
+
+
 void AccelStepper::moveTo(long absolute)
 {
+    isWiggling = 0;
     if (_targetPos != absolute)
     {
 	_targetPos = absolute;
@@ -120,6 +161,40 @@ void AccelStepper::moveToExtraRevolutions(long absolute, int8_t dir, uint8_t ext
     }
 
     move(relative + stepsPerRevolution * extra_revs * dir);
+}
+
+void AccelStepper::wiggle(long relative)
+{
+    this->_wiggleRelative = relative;
+
+    if(isWiggling != 0){  //move back to og position
+        _targetPos = this->_wiggleStartPos;
+    }
+
+    if (distanceToGo() != 0){
+        this->_wiggleStartPos = _targetPos;
+        moveToShortestPath(_targetPos);
+        isWiggling = 2;
+    }
+    else{
+        this->_wiggleStartPos = _currentPos;
+        isWiggling = 1;
+        doWiggle();
+    }
+}
+
+
+void AccelStepper::doWiggle()
+{
+    if(isWiggling != 0 && !isRunning()){
+        if(isWiggling == 2){
+            move(this->_wiggleRelative);
+            isWiggling = 1;
+        }else{
+            move(-this->_wiggleRelative);
+            isWiggling = 0;
+        }
+    }
 }
 
 void AccelStepper::move(long relative)
@@ -279,48 +354,10 @@ void AccelStepper::computeNewSpeed()
 // returns true if the motor is still running to the target position.
 boolean AccelStepper::run()
 {
+    doWiggle();
     if (runSpeed())
 	computeNewSpeed();
     return _speed != 0.0 || distanceToGo() != 0;
-}
-
-AccelStepper::AccelStepper(uint8_t pin1, uint8_t pin2, uint16_t stepsPerRevolution, uint8_t hallPin, short hallOffset)
-{
-    _interface = DRIVER;
-    _currentPos = 0;
-    _targetPos = 0;
-    _speed = 0.0;
-    _maxSpeed = 1.0;
-    _acceleration = 0.0;
-    _sqrt_twoa = 1.0;
-    _stepInterval = 0;
-    _minPulseWidth = 1;
-    _enablePin = 0xff;
-    _lastStepTime = 0;
-    this->pin[0] = pin1;
-    this->pin[1] = pin2;
-    this->pin[2] = 0;
-    this->pin[3] = 0;
-    _enableInverted = false;
-
-    this->hallPin = hallPin;
-    this->stepsPerRevolution = stepsPerRevolution;
-    this->hallOffset = hallOffset;
-    _currZeroRevolution = 0;
-    _isZeroed = false;
-
-    // NEW
-    _n = 0;
-    _c0 = 0.0;
-    _cn = 0.0;
-    _cmin = 1.0;
-    _direction = DIRECTION_CCW;
-
-    int i;
-    for (i = 0; i < 4; i++)
-        _pinInverted[i] = 0;
-    // Some reasonable default
-    setAcceleration(1);
 }
 
 void AccelStepper::setMaxSpeed(float speed)
@@ -713,57 +750,10 @@ void AccelStepper::stop()
     }
 }
 
-void AccelStepper::initZeroing(uint8_t revolutions)
-{
-    stop();
-    //so you dont have to deal with negative current positions
-    setCurrentPosition(0);
-    //initialize movement with an extra half rotation in case hall sensor is currently tripped
-    move(stepsPerRevolution * revolutions + stepsPerRevolution/2);
-    //set _hallWasOff to current hall value
-    _hallWasOff = digitalRead(hallPin);
-    _currZeroRevolution = 0;
-    _isZeroed = false;
-}
-
-boolean AccelStepper::runZeroing()
-{
-    bool finished = !run();
-    //check hall sensor, if first turned on, if so log position
-    if(!_isZeroed && _hallWasOff && digitalRead(hallPin) == LOW){
-        _hallWasOff = false;
-        _hallTripPosition[_currZeroRevolution] = currentPosition() % stepsPerRevolution;
-        _currZeroRevolution += 1;
-        Serial.println(currentPosition() % stepsPerRevolution);
-    }
-
-    if (digitalRead(hallPin) == HIGH){
-        _hallWasOff = true;
-    }
-
-    if (finished){
-        if(!_isZeroed){
-            _isZeroed = true;
-            short sum = 0;
-            for(int i = 0; i < _currZeroRevolution; i++){
-                sum += _hallTripPosition[i];
-            }
-            moveToShortestPath(sum/(_currZeroRevolution)+hallOffset); // move to new zero position and then set to zero
-        }else{
-            setCurrentPosition(0);
-            return true;
-        }
-    }
-    return false;
-}
-
 void AccelStepper::setPinModesDriver()
 {
     pinMode(pin[0], OUTPUT);
     pinMode(pin[1], OUTPUT);
-    if(hallPin != -1){
-        pinMode(hallPin, INPUT);
-    }
 }
 
 bool AccelStepper::isRunning()

@@ -370,7 +370,7 @@ public:
     /// to pin 5.
     /// \param[in] enable If this is true (the default), enableOutputs() will be called to enable
     /// the output pins at construction time.
-    AccelStepper(uint8_t pin1, uint8_t pin2, uint16_t stepsPerRevolution, uint8_t hallPin = -1, short hallOffset = 0);
+    AccelStepper(uint8_t pin1, uint8_t pin2, uint16_t stepsPerRevolution);
 
     /// sets pin modes for 2 pin driver and hall sensor with external pull up resistor
     void    setPinModesDriver();
@@ -397,6 +397,13 @@ public:
     /// 1 is cw, -1 is ccw
     void    moveToExtraRevolutions(long absolute, int8_t dir, uint8_t extra_revs);
 
+    /// moves a distance and direction, when thsi new pos is reached it reutrns to origianl position
+    /// if another movement is received during a wiggle set is wiggling is set to false
+    /// if stepper is still moving it first goes to single rev targetpos and then wiggles there
+    /// if stepper is currently wiggling it returns to wiggle start pos then starts wiggling
+    /// takes fixed direction
+    /// + is cw, - is ccw
+    void    wiggle(long relative);
 
     /// Set the target position relative to the current position.
     /// \param[in] relative The desired position relative to the current position. Negative is
@@ -497,16 +504,6 @@ public:
     /// to stop as quickly as possible, using the current speed and acceleration parameters.
     void stop();
 
-    /// zero using the hall sensor
-    /// 8 revolutions and takes the average hall sensor trigger step location
-    /// to set as new 0 position
-    void initZeroing(uint8_t revolutions);
-
-    /// zero using the hall sensor
-    /// 8 revolutions and takes the average hall sensor trigger step location
-    /// to set as new 0 position
-    bool runZeroing();
-
     /// Disable motor pin outputs by setting them all LOW
     /// Depending on the design of your electronics this may turn off
     /// the power to the motor coils, saving power.
@@ -558,15 +555,14 @@ public:
     /// stepper motor or driver
     uint8_t        pin[4];
 
-    /// Pin number of the Hall Sensor
-    uint8_t        hallPin;
-
     /// Total number of steps for one full revolution
     uint16_t       stepsPerRevolution;
 
-    /// Hall 0 offset in steps positive is cw
-    short          hallOffset;
-
+    /// the current status of wiggling,
+    // 0 - not currently wiggling
+    // 1 - wiggle
+    // 2 - finishing previous move before starting wiggle
+    uint8_t       isWiggling;
 protected:
 
     /// \brief Direction indicator
@@ -576,6 +572,9 @@ protected:
 	DIRECTION_CCW = 0,  ///< Counter-Clockwise
         DIRECTION_CW  = 1   ///< Clockwise
     } Direction;
+
+    /// private function to handle the different stages of wiggling
+    void           doWiggle();
 
     /// Forces the library to compute a new instantaneous speed and set that as
     /// the current speed. It is called by
@@ -653,20 +652,6 @@ protected:
     boolean _direction; // 1 == CW
     
 private:
-
-    /// variable for detecting when the hall sensor was tripped on, true if hall was off on last check
-    bool            _hallWasOff;
-
-    /// list of previously tripped hall positions
-    /// maximum of 20 revolutions
-    short           _hallTripPosition[20];
-
-    /// this is set true as soon as rotation to a zero position is initialized
-    bool            _isZeroed;
-
-    /// current Revolution of zeroing, used as a index for array of hall trip positions
-    uint8_t         _currZeroRevolution;
-
     /// Number of pins on the stepper motor. Permits 2 or 4. 2 pins is a
     /// bipolar, and 4 pins is a unipolar.
     uint8_t        _interface;          // 0, 1, 2, 4, 8, See MotorInterfaceType
@@ -681,6 +666,12 @@ private:
     /// motor from the _currentPos to the _targetPos, taking into account the
     /// max speed, acceleration and deceleration
     long           _targetPos;     // Steps
+
+    /// The target position of the most recent wiggle, so it knows where it has to return to
+    long           _wiggleStartPos;     // Steps
+
+    /// The relative movement of most recent wiggle
+    long           _wiggleRelative;     // Steps
 
     /// The current motos speed in steps per second
     /// Positive is clockwise

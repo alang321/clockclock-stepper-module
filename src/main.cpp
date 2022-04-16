@@ -16,7 +16,7 @@
 #define CMD_COUNT 8
 #define CMD_QUEUE_LENGTH 16
 
-#define I2C_ADDRESS 13 // [12;17], 12 is at top right from clockface, row first
+#define I2C_ADDRESS 14 // [12;17], 12 is at top right from clockface, row first
 #define I2C_SDA_PIN 15
 #define I2C_SCL_PIN 16
 
@@ -145,6 +145,7 @@ void setup() {
     m_steppers[i]->moveToSingleRevolution(0, 1);
   }
 
+  //set enable_pin to high so no weird behaviour happens during mcu startup (has external pull down)
   delay(5);
   pinMode(ENABLE_PIN, OUTPUT);
   digitalWrite(ENABLE_PIN, HIGH);
