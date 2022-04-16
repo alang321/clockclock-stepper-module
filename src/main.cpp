@@ -16,7 +16,7 @@
 #define CMD_COUNT 8
 #define CMD_QUEUE_LENGTH 16
 
-#define I2C_ADDRESS 14 // [12;17], 12 is at top right from clockface, row first
+#define I2C_ADDRESS 13 // [12;17], 12 is at top right from clockface, row first
 #define I2C_SDA_PIN 15
 #define I2C_SCL_PIN 16
 
@@ -323,17 +323,17 @@ void stop_handler(){
 }
 
 void wiggle_handler(){
-  int cmd_id = move;
+  int cmd_id = wiggle;
   
-  move_datastruct move_data;
-  i2c_cmd_queues[cmd_id].pop(&move_data);
+  wiggle_datastruct wiggle_data;
+  i2c_cmd_queues[cmd_id].pop(&wiggle_data);
 
-  if(move_data.stepper_id == -1){
+  if(wiggle_data.stepper_id == -1){
     for(int i = 0; i < NUM_STEPPERS; i++){
-      steppers[i]->wiggle(move_data.distance * move_data.dir);
+      steppers[i]->wiggle(wiggle_data.distance * wiggle_data.dir);
     }
   }else{
-    steppers[move_data.stepper_id]->wiggle(move_data.distance * move_data.dir);
+    steppers[wiggle_data.stepper_id]->wiggle(wiggle_data.distance * wiggle_data.dir);
   }
 }
 
