@@ -35,10 +35,11 @@ void enable_driver_handler();
 void set_speed_handler();
 void set_accel_handler();
 void moveTo_handler();
+void moveTo_extra_revs_handler();
 void move_handler();
 void stop_handler();
+void wiggle_handler();
 void falling_pointer_handler();
-void moveTo_extra_revs_handler();
 
 #pragma region accel stepper defintion
 
@@ -66,7 +67,7 @@ AccelStepper *m_steppers[] = {&x1m, &x2m, &x3m, &x4m};
 
 #pragma region i2c commands
 
-enum cmd_identifier {enable_driver = 0, set_speed = 1, set_accel = 2, moveTo = 3, moveTo_extra_revs = 4, move = 5, stop = 6, falling_pointer = 7};
+enum cmd_identifier {enable_driver = 0, set_speed = 1, set_accel = 2, moveTo = 3, moveTo_extra_revs = 4, move = 5, stop = 6, wiggle = 7, falling_pointer = 8};
 
 struct enable_driver_datastruct {
   bool enable; //1bytes # true enables the driver, false disables it
@@ -105,6 +106,12 @@ struct stop_datastruct {
   int8_t stepper_id; //if stepper id is -1 it applys to all steppers 1byte 
 };
 
+struct wiggle_datastruct {
+  uint16_t distance; //2bytes
+  int8_t dir; // -1 ccw, 1 cw 1byte
+  int8_t stepper_id; //if stepper id is -1 it applys to all steppers 1byte 
+};
+
 struct falling_pointer_datastruct {
   int8_t stepper_id; //if stepper id is -1 it applys to all steppers 1byte 
 };
@@ -116,13 +123,14 @@ cppQueue	moveTo_queue(sizeof(moveTo_datastruct), CMD_QUEUE_LENGTH, FIFO, true);
 cppQueue	moveTo_extra_revs_queue(sizeof(moveTo_extra_revs_datastruct), CMD_QUEUE_LENGTH, FIFO, true);
 cppQueue	move_queue(sizeof(move_datastruct), CMD_QUEUE_LENGTH, FIFO, true);
 cppQueue	stop_queue(sizeof(stop_datastruct), CMD_QUEUE_LENGTH, FIFO, true);
+cppQueue	wiggle_queue(sizeof(wiggle_datastruct), CMD_QUEUE_LENGTH, FIFO, true);
 cppQueue	falling_pointer_queue(sizeof(falling_pointer_datastruct), CMD_QUEUE_LENGTH, FIFO, true);
 
-cppQueue i2c_cmd_queues[] = {enable_driver_queue, set_speed_queue, set_accel_queue, moveTo_queue, moveTo_extra_revs_queue, move_queue, stop_queue, falling_pointer_queue};
+cppQueue i2c_cmd_queues[] = {enable_driver_queue, set_speed_queue, set_accel_queue, moveTo_queue, moveTo_extra_revs_queue, move_queue, stop_queue, wiggle_queue, falling_pointer_queue};
 
 typedef void (*i2c_cmd_handler) ();
 
-i2c_cmd_handler i2c_cmd_handlers[] = {enable_driver_handler, set_speed_handler, set_accel_handler, moveTo_handler, moveTo_extra_revs_handler, move_handler, stop_handler, falling_pointer_handler};
+i2c_cmd_handler i2c_cmd_handlers[] = {enable_driver_handler, set_speed_handler, set_accel_handler, moveTo_handler, moveTo_extra_revs_handler, move_handler, stop_handler, wiggle_handler, falling_pointer_handler};
 
 #pragma endregion
 
@@ -311,6 +319,21 @@ void stop_handler(){
     }
   }else{
     steppers[stop_data.stepper_id]->stop();
+  }
+}
+
+void wiggle_handler(){
+  int cmd_id = move;
+  
+  move_datastruct move_data;
+  i2c_cmd_queues[cmd_id].pop(&move_data);
+
+  if(move_data.stepper_id == -1){
+    for(int i = 0; i < NUM_STEPPERS; i++){
+      steppers[i]->wiggle(move_data.distance * move_data.dir);
+    }
+  }else{
+    steppers[move_data.stepper_id]->wiggle(move_data.distance * move_data.dir);
   }
 }
 

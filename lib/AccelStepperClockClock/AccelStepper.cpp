@@ -178,7 +178,7 @@ void AccelStepper::wiggle(long relative)
     }
     else{
         this->_wiggleStartPos = _currentPos;
-        isWiggling = 1;
+        isWiggling = 2;
         doWiggle();
     }
 }
