@@ -171,7 +171,7 @@ void AccelStepper::wiggle(long relative)
         _targetPos = this->_wiggleStartPos;
     }
 
-    if (distanceToGo() != 0){
+    if (isRunning()){
         this->_wiggleStartPos = _targetPos;
         moveToShortestPath(_targetPos);
         isWiggling = 2;
