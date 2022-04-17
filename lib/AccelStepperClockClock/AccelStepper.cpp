@@ -97,7 +97,8 @@ void AccelStepper::moveToShortestPath(long absolute)
     else if (relative < -stepsPerRevolution/2){
         relative = relative + stepsPerRevolution;
     }
-
+    
+    _currentPos = relCurrentPos;
     move(relative);
 }
 
@@ -128,7 +129,8 @@ void AccelStepper::moveToSingleRevolution(long absolute, int8_t dir)
             relative = stepsPerRevolution + relative;
         }
     }
-
+    
+    _currentPos = relCurrentPos;
     move(relative);
 }
 
@@ -159,7 +161,8 @@ void AccelStepper::moveToExtraRevolutions(long absolute, int8_t dir, uint8_t ext
             relative = stepsPerRevolution + relative;
         }
     }
-
+    
+    _currentPos = relCurrentPos;
     move(relative + stepsPerRevolution * extra_revs * dir);
 }
 
@@ -204,7 +207,8 @@ void AccelStepper::move(long relative)
 
 void AccelStepper::moveTarget(long relative)
 {
-    moveTo(_targetPos + relative);
+    _currentPos = _currentPos % stepsPerRevolution;
+    moveTo((_targetPos % stepsPerRevolution) + relative);
 }
 
 // Implements steps according to the current step interval
