@@ -6,7 +6,7 @@
 
 // start to be configured
 #define BROKEN_PCB false
-#define I2C_ADDRESS 12 // [12;17], 12 is at top left from clockface, row first
+#define I2C_ADDRESS 13 // [12;17], 12 is at top left from clockface, row first
 // end
 
 #define NUM_STEPPERS 8

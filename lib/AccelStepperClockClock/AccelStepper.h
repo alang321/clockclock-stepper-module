@@ -397,8 +397,10 @@ public:
     /// 1 is cw, -1 is ccw
     void    moveToExtraRevolutions(long absolute, int8_t dir, uint8_t extra_revs);
 
-    /// moves a distance and direction, when thsi new pos is reached it reutrns to origianl position
+    /// moves a distance and direction, when this new pos is reached it returns to origianl position
+/// if another movement is received during a wiggle set is wiggling is set to false 
     /// if another movement is received during a wiggle set is wiggling is set to false
+/// if another movement is received during a wiggle set is wiggling is set to false 
     /// if stepper is still moving it first goes to single rev targetpos and then wiggles there
     /// if stepper is currently wiggling it returns to wiggle start pos then starts wiggling
     /// takes fixed direction
@@ -573,8 +575,13 @@ protected:
         DIRECTION_CW  = 1   ///< Clockwise
     } Direction;
 
-    /// private function to handle the different stages of wiggling
+    /// protected function to handle the different stages of wiggling
     void           doWiggle();
+
+    /// protected function to normalize curent Position preserving relative target pos
+    /// this is done so no overflow can happen, as actual absolute position is not critical
+    /// currentPos will be between 0-stepsPerRevolution
+    void           normalizePosition();
 
     /// Forces the library to compute a new instantaneous speed and set that as
     /// the current speed. It is called by
