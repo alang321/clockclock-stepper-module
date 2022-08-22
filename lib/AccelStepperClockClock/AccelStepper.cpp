@@ -59,6 +59,10 @@ AccelStepper::AccelStepper(uint8_t pin1, uint8_t pin2, uint16_t stepsPerRevoluti
     setAcceleration(1);
 }
 
+void AccelStepper::move(long relative)
+{
+    moveTo(_currentPos + relative);
+}
 
 void AccelStepper::moveTo(long absolute)
 {
@@ -71,24 +75,20 @@ void AccelStepper::moveTo(long absolute)
     }
 }
 
+void AccelStepper::moveTarget(long relative)
+{
+    normalizePosition();
+    moveTo(_targetPos + relative);
+}
+
 void AccelStepper::moveToShortestPath(long absolute)
 {
-    absolute = absolute % stepsPerRevolution;
-    //to deal with negative absolute positions
-    if(absolute < 0){
-        absolute = stepsPerRevolution + absolute;
-    }
+    normalizePosition();
 
-    short relCurrentPos = _currentPos % stepsPerRevolution;
+    absolute = (absolute % stepsPerRevolution + stepsPerRevolution) % stepsPerRevolution; // normalize absolute, (a%b + b)%b to avoid negative remainder
 
-    //to deal with negative current positions
-    if(relCurrentPos < 0){
-        relCurrentPos = stepsPerRevolution + relCurrentPos;
-    }
+    short relative = absolute - _currentPos;
 
-    short relative = absolute - relCurrentPos;
-
-    //non fixed direction
     //if bigger than semi circle in cw direction move ccw
     if (relative > stepsPerRevolution/2){
         relative = relative - stepsPerRevolution;
@@ -98,72 +98,37 @@ void AccelStepper::moveToShortestPath(long absolute)
         relative = relative + stepsPerRevolution;
     }
     
-    _currentPos = relCurrentPos;
     move(relative);
 }
 
 void AccelStepper::moveToSingleRevolution(long absolute, int8_t dir)
 {
-    absolute = absolute % stepsPerRevolution;
-    //to deal with negative absolute positions
-    if(absolute < 0){
-        absolute = stepsPerRevolution + absolute;
-    }
+    normalizePosition();
 
-    short relCurrentPos = _currentPos % stepsPerRevolution;
+    absolute = (absolute % stepsPerRevolution + stepsPerRevolution) % stepsPerRevolution; // normalize absolute, (a%b + b)%b to avoid negative remainder
 
-    //to deal with negative current positions
-    if(relCurrentPos < 0){
-        relCurrentPos = stepsPerRevolution + relCurrentPos;
-    }
+    // move from normalized current post to normalized given absolute position
+    short movement = (absolute - _currentPos + stepsPerRevolution * dir) % stepsPerRevolution;
 
-    short relative = absolute - relCurrentPos;
-
-    //fixed direction
-    if (dir == -1){ //ccw direction
-        if (relative > 0){
-            relative = relative - stepsPerRevolution;
-        }
-    } else { //cw direction
-        if (relative < 0){
-            relative = stepsPerRevolution + relative;
-        }
-    }
-    
-    _currentPos = relCurrentPos;
-    move(relative);
+    move(movement);
 }
 
 void AccelStepper::moveToExtraRevolutions(long absolute, int8_t dir, uint8_t extra_revs) // shitty name, like move to single revolution but allows multiple extra rotations
 {
-    absolute = absolute % stepsPerRevolution;
-    //to deal with negative absolute positions
-    if(absolute < 0){
-        absolute = stepsPerRevolution + absolute;
-    }
+    normalizePosition();
 
-    short relCurrentPos = _currentPos % stepsPerRevolution;
+    absolute = (absolute % stepsPerRevolution + stepsPerRevolution) % stepsPerRevolution; // normalize absolute, (a%b + b)%b to avoid negative remainder
 
-    //to deal with negative current positions
-    if(relCurrentPos < 0){
-        relCurrentPos = stepsPerRevolution + relCurrentPos;
-    }
+    // move from normalized current post to normalized given absolute position
+    short movement = (absolute - _currentPos + stepsPerRevolution * dir) % stepsPerRevolution;
 
-    short relative = absolute - relCurrentPos;
+    move(movement + stepsPerRevolution * extra_revs * dir);
+}
 
-    //fixed direction
-    if (dir == -1){ //ccw direction
-        if (relative > 0){
-            relative = relative - stepsPerRevolution;
-        }
-    } else { //cw direction
-        if (relative < 0){
-            relative = stepsPerRevolution + relative;
-        }
-    }
-    
-    _currentPos = relCurrentPos;
-    move(relative + stepsPerRevolution * extra_revs * dir);
+void AccelStepper::normalizePosition(){
+    long distToGo = distanceToGo();
+    _currentPos = (_currentPos % stepsPerRevolution + stepsPerRevolution) % stepsPerRevolution;;
+    _targetPos = _currentPos + distToGo;
 }
 
 void AccelStepper::wiggle(long relative)
@@ -198,17 +163,6 @@ void AccelStepper::doWiggle()
             isWiggling = 0;
         }
     }
-}
-
-void AccelStepper::move(long relative)
-{
-    moveTo(_currentPos + relative);
-}
-
-void AccelStepper::moveTarget(long relative)
-{
-    _currentPos = _currentPos % stepsPerRevolution;
-    moveTo((_targetPos % stepsPerRevolution) + relative);
 }
 
 // Implements steps according to the current step interval
