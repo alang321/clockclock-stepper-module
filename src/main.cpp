@@ -5,8 +5,8 @@
 
 
 // start to be configured
-#define BROKEN_PCB false
-#define I2C_ADDRESS 13 // [12;17], 12 is at top left from clockface, row first
+#define BROKEN_PCB true // pcb 16
+#define I2C_ADDRESS 16 // [12;17], 12 is at top left from clockface, row first
 // end
 
 #define NUM_STEPPERS 8
@@ -42,7 +42,7 @@ void moveTo_extra_revs_handler();
 void move_handler();
 void stop_handler();
 void wiggle_handler();
-void falling_pointer_handler();
+void moveTo_min_steps_handler();
 
 #pragma region accel stepper defintion
 
@@ -70,7 +70,7 @@ AccelStepper *m_steppers[] = {&x1m, &x2m, &x3m, &x4m};
 
 #pragma region i2c commands
 
-enum cmd_identifier {enable_driver = 0, set_speed = 1, set_accel = 2, moveTo = 3, moveTo_extra_revs = 4, move = 5, stop = 6, wiggle = 7, falling_pointer = 8};
+enum cmd_identifier {enable_driver = 0, set_speed = 1, set_accel = 2, moveTo = 3, moveTo_extra_revs = 4, move = 5, stop = 6, wiggle = 7, moveTo_min_steps = 8};
 
 struct enable_driver_datastruct {
   bool enable; //1bytes # true enables the driver, false disables it
@@ -87,15 +87,22 @@ struct set_accel_datastruct {
 };
 
 struct moveTo_datastruct {
-  uint16_t position; //2bytes
+  int16_t position; //2bytes
   int8_t dir; // -1 ccw, 0 shortest path, 1 cw 1byte
   int8_t stepper_id; //if stepper id is -1 it applys to all steppers 1byte 
 };
 
 struct moveTo_extra_revs_datastruct { // moveTo but with an extra variable that allows rotating the stepper a variable extra times before reaching  target destination
-  uint16_t position; //2bytes
+  int16_t position; //2bytes
   int8_t dir; // -1 ccw, 1 cw 1byte
   uint8_t extra_revs; //1bytes
+  int8_t stepper_id; //if stepper id is -1 it applys to all steppers 1byte 
+};
+
+struct moveTo_min_steps_datastruct {
+  int16_t position; //2bytes
+  int8_t dir; // -1 ccw, 1 cw 1byte
+  uint16_t min_steps; //2bytes
   int8_t stepper_id; //if stepper id is -1 it applys to all steppers 1byte 
 };
 
@@ -115,10 +122,6 @@ struct wiggle_datastruct {
   int8_t stepper_id; //if stepper id is -1 it applys to all steppers 1byte 
 };
 
-struct falling_pointer_datastruct {
-  int8_t stepper_id; //if stepper id is -1 it applys to all steppers 1byte 
-};
-
 cppQueue	enable_driver_queue(sizeof(enable_driver_datastruct), CMD_QUEUE_LENGTH, FIFO, true);
 cppQueue	set_speed_queue(sizeof(set_speed_datastruct), CMD_QUEUE_LENGTH, FIFO, true);
 cppQueue	set_accel_queue(sizeof(set_accel_datastruct), CMD_QUEUE_LENGTH, FIFO, true);
@@ -127,13 +130,13 @@ cppQueue	moveTo_extra_revs_queue(sizeof(moveTo_extra_revs_datastruct), CMD_QUEUE
 cppQueue	move_queue(sizeof(move_datastruct), CMD_QUEUE_LENGTH, FIFO, true);
 cppQueue	stop_queue(sizeof(stop_datastruct), CMD_QUEUE_LENGTH, FIFO, true);
 cppQueue	wiggle_queue(sizeof(wiggle_datastruct), CMD_QUEUE_LENGTH, FIFO, true);
-cppQueue	falling_pointer_queue(sizeof(falling_pointer_datastruct), CMD_QUEUE_LENGTH, FIFO, true);
+cppQueue	moveTo_min_steps_queue(sizeof(moveTo_min_steps_datastruct), CMD_QUEUE_LENGTH, FIFO, true);
 
-cppQueue i2c_cmd_queues[] = {enable_driver_queue, set_speed_queue, set_accel_queue, moveTo_queue, moveTo_extra_revs_queue, move_queue, stop_queue, wiggle_queue, falling_pointer_queue};
+cppQueue i2c_cmd_queues[] = {enable_driver_queue, set_speed_queue, set_accel_queue, moveTo_queue, moveTo_extra_revs_queue, move_queue, stop_queue, wiggle_queue, moveTo_min_steps_queue};
 
 typedef void (*i2c_cmd_handler) ();
 
-i2c_cmd_handler i2c_cmd_handlers[] = {enable_driver_handler, set_speed_handler, set_accel_handler, moveTo_handler, moveTo_extra_revs_handler, move_handler, stop_handler, wiggle_handler, falling_pointer_handler};
+i2c_cmd_handler i2c_cmd_handlers[] = {enable_driver_handler, set_speed_handler, set_accel_handler, moveTo_handler, moveTo_extra_revs_handler, move_handler, stop_handler, wiggle_handler, moveTo_min_steps_handler};
 
 #pragma endregion
 
@@ -295,6 +298,21 @@ void moveTo_extra_revs_handler(){
   }
 }
 
+void moveTo_min_steps_handler(){
+  int cmd_id = moveTo_min_steps;
+
+  moveTo_min_steps_datastruct moveTo_min_steps_data;
+  i2c_cmd_queues[cmd_id].pop(&moveTo_min_steps_data);
+
+  if(moveTo_min_steps_data.stepper_id == -1){
+    for(int i = 0; i < NUM_STEPPERS; i++){
+      steppers[i]->moveToMinSteps(moveTo_min_steps_data.position, moveTo_min_steps_data.dir, moveTo_min_steps_data.min_steps);
+    }
+  }else{
+    steppers[moveTo_min_steps_data.stepper_id]->moveToMinSteps(moveTo_min_steps_data.position, moveTo_min_steps_data.dir, moveTo_min_steps_data.min_steps);
+  }
+}
+
 void move_handler(){
   int cmd_id = move;
   
@@ -338,15 +356,6 @@ void wiggle_handler(){
   }else{
     steppers[wiggle_data.stepper_id]->wiggle(wiggle_data.distance * wiggle_data.dir);
   }
-}
-
-void falling_pointer_handler(){
-  int cmd_id = falling_pointer;
-
-  falling_pointer_datastruct falling_pointer_data;
-  i2c_cmd_queues[cmd_id].pop(&falling_pointer_data);
-
-  // todo : implement
 }
 
 #pragma endregion

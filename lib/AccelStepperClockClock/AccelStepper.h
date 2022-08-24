@@ -397,6 +397,11 @@ public:
     /// 1 is cw, -1 is ccw
     void    moveToExtraRevolutions(long absolute, int8_t dir, uint8_t extra_revs);
 
+    /// moves to a position from 0 - (steps per revolution - 1)
+    /// takes fixed direction, moves at least the given number of minimum steps, during extra revs
+    /// 1 is cw, -1 is ccw
+    void    moveToMinSteps(long absolute, int8_t dir, uint16_t min_steps);
+
     /// moves a distance and direction, when this new pos is reached it returns to origianl position
 /// if another movement is received during a wiggle set is wiggling is set to false 
     /// if another movement is received during a wiggle set is wiggling is set to false

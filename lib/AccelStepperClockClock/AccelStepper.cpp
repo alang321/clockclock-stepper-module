@@ -125,6 +125,24 @@ void AccelStepper::moveToExtraRevolutions(long absolute, int8_t dir, uint8_t ext
     move(movement + stepsPerRevolution * extra_revs * dir);
 }
 
+void AccelStepper::moveToMinSteps(long absolute, int8_t dir, uint16_t min_steps) // shitty name, like move to single revolution but allows multiple extra rotations
+{
+    normalizePosition();
+
+    absolute = (absolute % stepsPerRevolution + stepsPerRevolution) % stepsPerRevolution; // normalize absolute, (a%b + b)%b to avoid negative remainder
+
+    // move from normalized current post to normalized given absolute position
+    short movement = (absolute - _currentPos + stepsPerRevolution * dir) % stepsPerRevolution;
+
+    if(abs(movement) >= min_steps){
+        move(movement);
+    } else {
+        uint16_t diff =  min_steps - abs(movement);
+        uint8_t extra_revs = 1 + diff / stepsPerRevolution;
+        move(movement + stepsPerRevolution * extra_revs * dir);
+    }
+}
+
 void AccelStepper::normalizePosition(){
     long distToGo = distanceToGo();
     _currentPos = (_currentPos % stepsPerRevolution + stepsPerRevolution) % stepsPerRevolution;;
@@ -150,7 +168,6 @@ void AccelStepper::wiggle(long relative)
         doWiggle();
     }
 }
-
 
 void AccelStepper::doWiggle()
 {
