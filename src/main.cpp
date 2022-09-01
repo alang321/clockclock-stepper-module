@@ -268,26 +268,26 @@ void set_accel_handler(){
 
   switch(set_accel_data.stepper_id)
   {
-    case selector_all:
+    case selector_all:{
       float c0 = steppers[0]->setAcceleration(set_accel_data.accel);
       for(int i = 1; i < NUM_STEPPERS; i++){
         steppers[i]->setAcceleration(set_accel_data.accel, c0);
       }
-      break;
+    }break;
 
-    case selector_hour:
+    case selector_hour:{
       float c0 = h_steppers[0]->setAcceleration(set_accel_data.accel);
       for(int i = 1; i < NUM_STEPPERS_H; i++){
         h_steppers[i]->setAcceleration(set_accel_data.accel, c0);
       }
-      break;
+      }break;
 
-    case selector_minute:
+    case selector_minute:{
       float c0 = m_steppers[0]->setAcceleration(set_accel_data.accel);
       for(int i = 1; i < NUM_STEPPERS_M; i++){
         m_steppers[i]->setAcceleration(set_accel_data.accel, c0);
       }
-      break;
+      }break;
     
     default: //all the other stepper ids selecting individual steppers
       steppers[set_accel_data.stepper_id]->setAcceleration(set_accel_data.accel);

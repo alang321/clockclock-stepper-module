@@ -355,7 +355,7 @@ float   AccelStepper::maxSpeed()
 float AccelStepper::setAcceleration(float acceleration)
 {
     if (acceleration == 0.0)
-	return;
+	return _c0;
     if (acceleration < 0.0)
       acceleration = -acceleration;
     if (_acceleration != acceleration)
