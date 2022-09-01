@@ -72,54 +72,56 @@ AccelStepper *m_steppers[] = {&x1m, &x2m, &x3m, &x4m};
 
 enum cmd_identifier {enable_driver = 0, set_speed = 1, set_accel = 2, moveTo = 3, moveTo_extra_revs = 4, move = 5, stop = 6, wiggle = 7, moveTo_min_steps = 8};
 
+enum stepper_selector {selector_minute = -3, selector_hour = -2, selector_all = -1};
+
 struct enable_driver_datastruct {
   bool enable; //1bytes # true enables the driver, false disables it
 };
 
 struct set_speed_datastruct {
   uint16_t speed; //2bytes
-  int8_t stepper_id; //if stepper id is -1 it applys to all steppers 1byte 
+  int8_t stepper_id; // -1  all, -2 hour steps, -3 minute steps, 1byte 
 };
 
 struct set_accel_datastruct {
   uint16_t accel; //2bytes
-  int8_t stepper_id; //if stepper id is -1 it applys to all steppers 1byte 
+  int8_t stepper_id; // -1  all, -2 hour steps, -3 minute steps, 1byte 
 };
 
 struct moveTo_datastruct {
   int16_t position; //2bytes
   int8_t dir; // -1 ccw, 0 shortest path, 1 cw 1byte
-  int8_t stepper_id; //if stepper id is -1 it applys to all steppers 1byte 
+  int8_t stepper_id; // -1  all, -2 hour steps, -3 minute steps, 1byte 
 };
 
 struct moveTo_extra_revs_datastruct { // moveTo but with an extra variable that allows rotating the stepper a variable extra times before reaching  target destination
   int16_t position; //2bytes
   int8_t dir; // -1 ccw, 1 cw 1byte
   uint8_t extra_revs; //1bytes
-  int8_t stepper_id; //if stepper id is -1 it applys to all steppers 1byte 
+  int8_t stepper_id; // -1  all, -2 hour steps, -3 minute steps, 1byte 
 };
 
 struct moveTo_min_steps_datastruct {
   int16_t position; //2bytes
   int8_t dir; // -1 ccw, 1 cw 1byte
   uint16_t min_steps; //2bytes
-  int8_t stepper_id; //if stepper id is -1 it applys to all steppers 1byte 
+  int8_t stepper_id; // -1  all, -2 hour steps, -3 minute steps, 1byte 
 };
 
 struct move_datastruct {
   uint16_t distance; //2bytes
   int8_t dir; // -1 ccw, 1 cw 1byte
-  int8_t stepper_id; //if stepper id is -1 it applys to all steppers 1byte 
+  int8_t stepper_id; // -1  all, -2 hour steps, -3 minute steps, 1byte 
 };
 
 struct stop_datastruct {
-  int8_t stepper_id; //if stepper id is -1 it applys to all steppers 1byte 
+  int8_t stepper_id; // -1  all, -2 hour steps, -3 minute steps, 1byte 
 };
 
 struct wiggle_datastruct {
   uint16_t distance; //2bytes
   int8_t dir; // -1 ccw, 1 cw 1byte
-  int8_t stepper_id; //if stepper id is -1 it applys to all steppers 1byte 
+  int8_t stepper_id; // -1  all, -2 hour steps, -3 minute steps, 1byte 
 };
 
 cppQueue	enable_driver_queue(sizeof(enable_driver_datastruct), CMD_QUEUE_LENGTH, FIFO, true);
@@ -232,12 +234,29 @@ void set_speed_handler(){
   set_speed_datastruct set_speed_data;
   i2c_cmd_queues[cmd_id].pop(&set_speed_data);
 
-  if(set_speed_data.stepper_id == -1){
-    for(int i = 0; i < NUM_STEPPERS; i++){
-      steppers[i]->setMaxSpeed(set_speed_data.speed);
-    }
-  }else{
-    steppers[set_speed_data.stepper_id]->setMaxSpeed(set_speed_data.speed);
+  switch(set_speed_data.stepper_id)
+  {
+    case selector_all:
+      for(int i = 0; i < NUM_STEPPERS; i++){
+        steppers[i]->setMaxSpeed(set_speed_data.speed);
+      }
+      break;
+
+    case selector_hour:
+      for(int i = 0; i < NUM_STEPPERS_H; i++){
+        h_steppers[i]->setMaxSpeed(set_speed_data.speed);
+      }
+      break;
+
+    case selector_minute:
+      for(int i = 0; i < NUM_STEPPERS_M; i++){
+        m_steppers[i]->setMaxSpeed(set_speed_data.speed);
+      }
+      break;
+    
+    default: //all the other stepper ids selecting individual steppers
+      steppers[set_speed_data.stepper_id]->setMaxSpeed(set_speed_data.speed);
+      break;
   }
 }
 
@@ -247,12 +266,32 @@ void set_accel_handler(){
   set_accel_datastruct set_accel_data;
   i2c_cmd_queues[cmd_id].pop(&set_accel_data);
 
-  if(set_accel_data.stepper_id == -1){
-    for(int i = 0; i < NUM_STEPPERS; i++){
-      steppers[i]->setAcceleration(set_accel_data.accel);
-    }
-  }else{
-    steppers[set_accel_data.stepper_id]->setAcceleration(set_accel_data.accel);
+  switch(set_accel_data.stepper_id)
+  {
+    case selector_all:
+      float c0 = steppers[0]->setAcceleration(set_accel_data.accel);
+      for(int i = 1; i < NUM_STEPPERS; i++){
+        steppers[i]->setAcceleration(set_accel_data.accel, c0);
+      }
+      break;
+
+    case selector_hour:
+      float c0 = h_steppers[0]->setAcceleration(set_accel_data.accel);
+      for(int i = 1; i < NUM_STEPPERS_H; i++){
+        h_steppers[i]->setAcceleration(set_accel_data.accel, c0);
+      }
+      break;
+
+    case selector_minute:
+      float c0 = m_steppers[0]->setAcceleration(set_accel_data.accel);
+      for(int i = 1; i < NUM_STEPPERS_M; i++){
+        m_steppers[i]->setAcceleration(set_accel_data.accel, c0);
+      }
+      break;
+    
+    default: //all the other stepper ids selecting individual steppers
+      steppers[set_accel_data.stepper_id]->setAcceleration(set_accel_data.accel);
+      break;
   }
 }
 
@@ -262,23 +301,29 @@ void moveTo_handler(){
   moveTo_datastruct moveTo_data;
   i2c_cmd_queues[cmd_id].pop(&moveTo_data);
 
-  //movement direction, shortest, left or right
-  if(moveTo_data.dir == 0){ //fix the handling of directions
-    if(moveTo_data.stepper_id == -1){
-      for(int i = 0; i < NUM_STEPPERS; i++){
-        steppers[i]->moveToShortestPath(moveTo_data.position);
-      }
-    }else{
-      steppers[moveTo_data.stepper_id]->moveToShortestPath(moveTo_data.position);
-    }
-  }else{
-    if(moveTo_data.stepper_id == -1){
+  switch(moveTo_data.stepper_id)
+  {
+    case selector_all:
       for(int i = 0; i < NUM_STEPPERS; i++){
         steppers[i]->moveToSingleRevolution(moveTo_data.position, moveTo_data.dir);
       }
-    }else{
+      break;
+
+    case selector_hour:
+      for(int i = 0; i < NUM_STEPPERS_H; i++){
+        h_steppers[i]->moveToSingleRevolution(moveTo_data.position, moveTo_data.dir);
+      }
+      break;
+
+    case selector_minute:
+      for(int i = 0; i < NUM_STEPPERS_M; i++){
+        m_steppers[i]->moveToSingleRevolution(moveTo_data.position, moveTo_data.dir);
+      }
+      break;
+    
+    default: //all the other stepper ids selecting individual steppers
       steppers[moveTo_data.stepper_id]->moveToSingleRevolution(moveTo_data.position, moveTo_data.dir);
-    }
+      break;
   }
 }
 
@@ -288,13 +333,29 @@ void moveTo_extra_revs_handler(){
   moveTo_extra_revs_datastruct moveTo_extra_revs_data;
   i2c_cmd_queues[cmd_id].pop(&moveTo_extra_revs_data);
 
-  //movement direction, shortest, left or right
-  if(moveTo_extra_revs_data.stepper_id == -1){
-    for(int i = 0; i < NUM_STEPPERS; i++){
-      steppers[i]->moveToExtraRevolutions(moveTo_extra_revs_data.position, moveTo_extra_revs_data.dir, moveTo_extra_revs_data.extra_revs);
-    }
-  }else{
+  switch(moveTo_extra_revs_data.stepper_id)
+  {
+    case selector_all:
+      for(int i = 0; i < NUM_STEPPERS; i++){
+        steppers[i]->moveToExtraRevolutions(moveTo_extra_revs_data.position, moveTo_extra_revs_data.dir, moveTo_extra_revs_data.extra_revs);
+      }
+      break;
+
+    case selector_hour:
+      for(int i = 0; i < NUM_STEPPERS_H; i++){
+        h_steppers[i]->moveToExtraRevolutions(moveTo_extra_revs_data.position, moveTo_extra_revs_data.dir, moveTo_extra_revs_data.extra_revs);
+      }
+      break;
+
+    case selector_minute:
+      for(int i = 0; i < NUM_STEPPERS_M; i++){
+        m_steppers[i]->moveToExtraRevolutions(moveTo_extra_revs_data.position, moveTo_extra_revs_data.dir, moveTo_extra_revs_data.extra_revs);
+      }
+      break;
+    
+    default: //all the other stepper ids selecting individual steppers
       steppers[moveTo_extra_revs_data.stepper_id]->moveToExtraRevolutions(moveTo_extra_revs_data.position, moveTo_extra_revs_data.dir, moveTo_extra_revs_data.extra_revs);
+      break;
   }
 }
 
@@ -304,12 +365,29 @@ void moveTo_min_steps_handler(){
   moveTo_min_steps_datastruct moveTo_min_steps_data;
   i2c_cmd_queues[cmd_id].pop(&moveTo_min_steps_data);
 
-  if(moveTo_min_steps_data.stepper_id == -1){
-    for(int i = 0; i < NUM_STEPPERS; i++){
-      steppers[i]->moveToMinSteps(moveTo_min_steps_data.position, moveTo_min_steps_data.dir, moveTo_min_steps_data.min_steps);
-    }
-  }else{
-    steppers[moveTo_min_steps_data.stepper_id]->moveToMinSteps(moveTo_min_steps_data.position, moveTo_min_steps_data.dir, moveTo_min_steps_data.min_steps);
+  switch(moveTo_min_steps_data.stepper_id)
+  {
+    case selector_all:
+      for(int i = 0; i < NUM_STEPPERS; i++){
+        steppers[i]->moveToMinSteps(moveTo_min_steps_data.position, moveTo_min_steps_data.dir, moveTo_min_steps_data.min_steps);
+      }
+      break;
+
+    case selector_hour:
+      for(int i = 0; i < NUM_STEPPERS_H; i++){
+        h_steppers[i]->moveToMinSteps(moveTo_min_steps_data.position, moveTo_min_steps_data.dir, moveTo_min_steps_data.min_steps);
+      }
+      break;
+
+    case selector_minute:
+      for(int i = 0; i < NUM_STEPPERS_M; i++){
+        m_steppers[i]->moveToMinSteps(moveTo_min_steps_data.position, moveTo_min_steps_data.dir, moveTo_min_steps_data.min_steps);
+      }
+      break;
+    
+    default: //all the other stepper ids selecting individual steppers
+      steppers[moveTo_min_steps_data.stepper_id]->moveToMinSteps(moveTo_min_steps_data.position, moveTo_min_steps_data.dir, moveTo_min_steps_data.min_steps);
+      break;
   }
 }
 
@@ -319,12 +397,29 @@ void move_handler(){
   move_datastruct move_data;
   i2c_cmd_queues[cmd_id].pop(&move_data);
 
-  if(move_data.stepper_id == -1){
-    for(int i = 0; i < NUM_STEPPERS; i++){
-      steppers[i]->moveTarget(move_data.distance * move_data.dir);
-    }
-  }else{
-    steppers[move_data.stepper_id]->moveTarget(move_data.distance * move_data.dir);
+  switch(move_data.stepper_id)
+  {
+    case selector_all:
+      for(int i = 0; i < NUM_STEPPERS; i++){
+        steppers[i]->moveTarget(move_data.distance * move_data.dir);
+      }
+      break;
+
+    case selector_hour:
+      for(int i = 0; i < NUM_STEPPERS_H; i++){
+        h_steppers[i]->moveTarget(move_data.distance * move_data.dir);
+      }
+      break;
+
+    case selector_minute:
+      for(int i = 0; i < NUM_STEPPERS_M; i++){
+        m_steppers[i]->moveTarget(move_data.distance * move_data.dir);
+      }
+      break;
+    
+    default: //all the other stepper ids selecting individual steppers
+      steppers[move_data.stepper_id]->moveTarget(move_data.distance * move_data.dir);
+      break;
   }
 }
 
@@ -334,12 +429,29 @@ void stop_handler(){
   stop_datastruct stop_data;
   i2c_cmd_queues[cmd_id].pop(&stop_data);
 
-  if(stop_data.stepper_id == -1){
-    for(int i = 0; i < NUM_STEPPERS; i++){
-      steppers[i]->stop();
-    }
-  }else{
-    steppers[stop_data.stepper_id]->stop();
+  switch(stop_data.stepper_id)
+  {
+    case selector_all:
+      for(int i = 0; i < NUM_STEPPERS; i++){
+        steppers[i]->stop();
+      }
+      break;
+
+    case selector_hour:
+      for(int i = 0; i < NUM_STEPPERS_H; i++){
+        h_steppers[i]->stop();
+      }
+      break;
+
+    case selector_minute:
+      for(int i = 0; i < NUM_STEPPERS_M; i++){
+        m_steppers[i]->stop();
+      }
+      break;
+    
+    default: //all the other stepper ids selecting individual steppers
+      steppers[stop_data.stepper_id]->stop();
+      break;
   }
 }
 
@@ -349,12 +461,29 @@ void wiggle_handler(){
   wiggle_datastruct wiggle_data;
   i2c_cmd_queues[cmd_id].pop(&wiggle_data);
 
-  if(wiggle_data.stepper_id == -1){
-    for(int i = 0; i < NUM_STEPPERS; i++){
-      steppers[i]->wiggle(wiggle_data.distance * wiggle_data.dir);
-    }
-  }else{
-    steppers[wiggle_data.stepper_id]->wiggle(wiggle_data.distance * wiggle_data.dir);
+  switch(wiggle_data.stepper_id)
+  {
+    case selector_all:
+      for(int i = 0; i < NUM_STEPPERS; i++){
+        steppers[i]->wiggle(wiggle_data.distance * wiggle_data.dir);
+      }
+      break;
+
+    case selector_hour:
+      for(int i = 0; i < NUM_STEPPERS_H; i++){
+        h_steppers[i]->wiggle(wiggle_data.distance * wiggle_data.dir);
+      }
+      break;
+
+    case selector_minute:
+      for(int i = 0; i < NUM_STEPPERS_M; i++){
+        m_steppers[i]->wiggle(wiggle_data.distance * wiggle_data.dir);
+      }
+      break;
+    
+    default: //all the other stepper ids selecting individual steppers
+      steppers[wiggle_data.stepper_id]->wiggle(wiggle_data.distance * wiggle_data.dir);
+      break;
   }
 }
 

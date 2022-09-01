@@ -384,12 +384,8 @@ public:
     void    moveTo(long absolute);
 
     /// moves to a position from 0 - (steps per revolution - 1)
-    /// takes shortest path
-    void    moveToShortestPath(long absolute);
-
-    /// moves to a position from 0 - (steps per revolution - 1)
-    /// takes fixed direction
-    /// 1 is cw, -1 is ccw
+    /// takes direction
+    /// 1 is cw, -1 is ccw, 0 is shortest of the two
     void    moveToSingleRevolution(long absolute, int8_t dir);
 
     /// moves to a position from 0 - (steps per revolution - 1)
@@ -452,7 +448,11 @@ public:
     /// \param[in] acceleration The desired acceleration in steps per second
     /// per second. Must be > 0.0. This is an expensive call since it requires a square 
     /// root to be calculated. Dont call more ofthen than needed
-    void    setAcceleration(float acceleration);
+    float    setAcceleration(float acceleration);
+
+    /// SetAcceleration but can take precalculated c0 avoiding taking Square Root, 
+    /// faster when setting same accel for multiple steppers
+    void    setAcceleration(float acceleration, float c0);
 
     /// Sets the desired constant speed for use with runSpeed().
     /// \param[in] speed The desired constant speed in steps per

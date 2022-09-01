@@ -81,34 +81,29 @@ void AccelStepper::moveTarget(long relative)
     moveTo(_targetPos + relative);
 }
 
-void AccelStepper::moveToShortestPath(long absolute)
-{
-    normalizePosition();
-
-    absolute = (absolute % stepsPerRevolution + stepsPerRevolution) % stepsPerRevolution; // normalize absolute, (a%b + b)%b to avoid negative remainder
-
-    short relative = absolute - _currentPos;
-
-    //if bigger than semi circle in cw direction move ccw
-    if (relative > stepsPerRevolution/2){
-        relative = relative - stepsPerRevolution;
-    }
-    //if bigger than semi circle in ccw direction move cw
-    else if (relative < -stepsPerRevolution/2){
-        relative = relative + stepsPerRevolution;
-    }
-    
-    move(relative);
-}
-
 void AccelStepper::moveToSingleRevolution(long absolute, int8_t dir)
 {
     normalizePosition();
 
     absolute = (absolute % stepsPerRevolution + stepsPerRevolution) % stepsPerRevolution; // normalize absolute, (a%b + b)%b to avoid negative remainder
 
-    // move from normalized current post to normalized given absolute position
-    short movement = (absolute - _currentPos + stepsPerRevolution * dir) % stepsPerRevolution;
+    short movement;
+
+    if(dir == 0){
+        movement = absolute - _currentPos;
+        //if bigger than semi circle in cw direction move ccw
+        if (movement > stepsPerRevolution/2){
+            movement -= stepsPerRevolution;
+        }
+        //if bigger than semi circle in ccw direction move cw
+        else if (movement < -stepsPerRevolution/2){
+            movement += stepsPerRevolution;
+        }
+    }else{
+        // move from normalized current post to normalized given absolute position
+        movement = (absolute - _currentPos + stepsPerRevolution * dir) % stepsPerRevolution;
+    }
+
 
     move(movement);
 }
@@ -159,7 +154,7 @@ void AccelStepper::wiggle(long relative)
 
     if (isRunning()){
         this->_wiggleStartPos = _targetPos;
-        moveToShortestPath(_targetPos);
+        moveToSingleRevolution(_targetPos, 0);
         isWiggling = 2;
     }
     else{
@@ -357,7 +352,7 @@ float   AccelStepper::maxSpeed()
     return _maxSpeed;
 }
 
-void AccelStepper::setAcceleration(float acceleration)
+float AccelStepper::setAcceleration(float acceleration)
 {
     if (acceleration == 0.0)
 	return;
@@ -369,6 +364,24 @@ void AccelStepper::setAcceleration(float acceleration)
 	_n = _n * (_acceleration / acceleration);
 	// New c0 per Equation 7, with correction per Equation 15
 	_c0 = 0.676 * sqrt(2.0 / acceleration) * 1000000.0; // Equation 15
+	_acceleration = acceleration;
+	computeNewSpeed();
+    }
+    return _c0;
+}
+
+void AccelStepper::setAcceleration(float acceleration, float c0)
+{
+    if (acceleration == 0.0)
+	return;
+    if (acceleration < 0.0)
+      acceleration = -acceleration;
+    if (_acceleration != acceleration)
+    {
+	// Recompute _n per Equation 17
+	_n = _n * (_acceleration / acceleration);
+	// New c0 per Equation 7, with correction per Equation 15
+	_c0 = c0; // Equation 15
 	_acceleration = acceleration;
 	computeNewSpeed();
     }
