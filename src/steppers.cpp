@@ -15,7 +15,7 @@ AccelStepper x3h(12, 13, STEPS_PER_REVOLUTION);
 AccelStepper x4m(8,  9,  STEPS_PER_REVOLUTION);
 AccelStepper x4h(7,  6,  STEPS_PER_REVOLUTION);
 
-AccelStepper *steppers[] = {&x1m, &x1h, &x2m, &x2h, &x3m, &x3h, &x4m, &x4h};
+AccelStepper *steppers[] = {&x1m, &x2m, &x3m, &x4m, &x1h, &x2h, &x3h, &x4h};
 AccelStepper *h_steppers[] = {&x1h, &x2h, &x3h, &x4h};
 AccelStepper *m_steppers[] = {&x1m, &x2m, &x3m, &x4m};
 
