@@ -82,7 +82,6 @@ public:
     byte buffer[MAX_COMMAND_LENGTH - 1];
     int bufferLength = 0;
     bool valid = false;
-    bool hasExecuted = false;
 
     CommandPacket();
     CommandPacket(byte (&buffer)[MAX_COMMAND_LENGTH - 1], uint8_t bufferLength);
@@ -234,7 +233,6 @@ public:
 private:
     //array of command data for each item in the entire queue length
     CommandData commands[CMD_QUEUE_LENGTH];
-
     uint16_t current_execute_index;
     uint16_t current_push_index;
 

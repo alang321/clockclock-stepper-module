@@ -40,7 +40,7 @@ bool CommandPacket::hasValidChecksum(){
 }
 
 bool CommandPacket::isStepperIdValid(int8_t stepper_id){
-    return stepper_id >= STEPPER_ID_MIN && stepper_id < STEPPER_ID_MAX;
+    return stepper_id >= STEPPER_ID_MIN && stepper_id <= STEPPER_ID_MAX;
 }
 
 #pragma endregion
@@ -52,18 +52,22 @@ EnableDriverPacket::EnableDriverPacket() : CommandPacket(){}
 EnableDriverPacket::EnableDriverPacket(byte (&buffer)[MAX_COMMAND_LENGTH - 1], uint8_t bufferLength) : CommandPacket(buffer, bufferLength){}
 
 bool EnableDriverPacket::parseData(){
-    if (!(bufferLength == sizeof(data) + 1 && hasValidChecksum())) return false;
+    if (!(bufferLength == sizeof(data) + 1 && hasValidChecksum())) 
+    {
+        valid = false;
+        return false;
+    }   
 
     memcpy(&data, buffer, sizeof(data));
 
     //check if data is in valid range
+    valid = true;
     return true;
 }
 
 bool EnableDriverPacket::executeCommand(){
-    if(valid && !hasExecuted){
+    if(valid){
         digitalWrite(ENABLE_PIN, data.enable);
-        hasExecuted = true;
         return true;
     }
     return false;
@@ -78,20 +82,30 @@ SetSpeedPacket::SetSpeedPacket() : CommandPacket(){}
 SetSpeedPacket::SetSpeedPacket(byte (&buffer)[MAX_COMMAND_LENGTH - 1], uint8_t bufferLength) : CommandPacket(buffer, bufferLength){}
 
 bool SetSpeedPacket::parseData(){
-    if (!(bufferLength == sizeof(data) + 1 && hasValidChecksum())) return false;
+    if (!(bufferLength == sizeof(data) + 1 && hasValidChecksum())) {
+        valid = false;
+        return false;
+    }
 
     memcpy(&data, buffer, sizeof(data));
 
     //check if data is in valid range
-    if(data.speed < MIN_SPEED || data.speed > MAX_SPEED) return false;
+    if(data.speed < MIN_SPEED || data.speed > MAX_SPEED) {
+        valid = false;
+        return false;
+    }
 
-    if(!isStepperIdValid(data.stepper_id)) return false;
+    if(!isStepperIdValid(data.stepper_id)) {
+        valid = false;
+        return false;
+    }
 
+    valid = true;
     return true;
 }
 
 bool SetSpeedPacket::executeCommand(){
-    if(valid && !hasExecuted){
+    if(valid){
         switch(data.stepper_id)
         {
             case selector_all:
@@ -116,7 +130,6 @@ bool SetSpeedPacket::executeCommand(){
             steppers[data.stepper_id]->setMaxSpeed(data.speed);
             break;
         }
-        hasExecuted = true;
         return true;
     }
     return false;
@@ -131,20 +144,30 @@ SetAccelPacket::SetAccelPacket() : CommandPacket(){}
 SetAccelPacket::SetAccelPacket(byte (&buffer)[MAX_COMMAND_LENGTH - 1], uint8_t bufferLength) : CommandPacket(buffer, bufferLength){}
 
 bool SetAccelPacket::parseData(){
-    if (!(bufferLength == sizeof(data) + 1 && hasValidChecksum())) return false;
+    if (!(bufferLength == sizeof(data) + 1 && hasValidChecksum()))  {
+        valid = false;
+        return false;
+    }
 
     memcpy(&data, buffer, sizeof(data));
 
     //check if data is in valid range
-    if(data.accel < MAX_ACCEL || data.accel > MAX_ACCEL) return false;
+    if(data.accel < MAX_ACCEL || data.accel > MAX_ACCEL)  {
+        valid = false;
+        return false;
+    }
 
-    if(!isStepperIdValid(data.stepper_id)) return false;
+    if(!isStepperIdValid(data.stepper_id))  {
+        valid = false;
+        return false;
+    }
 
+    valid = true;
     return true;
 }
 
 bool SetAccelPacket::executeCommand(){
-    if(valid && !hasExecuted){
+    if(valid){
         switch(data.stepper_id)
         {
         case selector_all:{
@@ -172,7 +195,6 @@ bool SetAccelPacket::executeCommand(){
             steppers[data.stepper_id]->setAcceleration(data.accel);
             break;
         }
-        hasExecuted = true;
         return true;
     }
     return false;
@@ -187,19 +209,29 @@ MoveToPacket::MoveToPacket() : CommandPacket(){}
 MoveToPacket::MoveToPacket(byte (&buffer)[MAX_COMMAND_LENGTH - 1], uint8_t bufferLength) : CommandPacket(buffer, bufferLength){}
 
 bool MoveToPacket::parseData(){
-    if (!(bufferLength == sizeof(data) + 1 && hasValidChecksum())) return false;
+    if (!(bufferLength == sizeof(data) + 1 && hasValidChecksum())) {
+        valid = false;
+        return false;
+    }
 
     memcpy(&data, buffer, sizeof(data));
 
     //check if data is in valid range
-    if(!isStepperIdValid(data.stepper_id)) return false;
-    if (data.dir != 1 && data.dir != -1 && data.dir != 0) return false;
+    if(!isStepperIdValid(data.stepper_id))  {
+        valid = false;
+        return false;
+    }
+    if (data.dir != 1 && data.dir != -1 && data.dir != 0) {
+        valid = false;
+        return false;
+    }
 
+    valid = true;
     return true;
 }
 
 bool MoveToPacket::executeCommand(){
-    if(valid && !hasExecuted){
+    if(valid){
         switch(data.stepper_id)
         {
         case selector_all:
@@ -224,7 +256,6 @@ bool MoveToPacket::executeCommand(){
             steppers[data.stepper_id]->moveToSingleRevolution(data.position, data.dir);
             break;
         }
-        hasExecuted = true;
         return true;
     }
     return false;
@@ -239,19 +270,29 @@ MoveToExtraRevsPacket::MoveToExtraRevsPacket() : CommandPacket(){}
 MoveToExtraRevsPacket::MoveToExtraRevsPacket(byte (&buffer)[MAX_COMMAND_LENGTH - 1], uint8_t bufferLength) : CommandPacket(buffer, bufferLength){}
 
 bool MoveToExtraRevsPacket::parseData(){
-    if (!(bufferLength == sizeof(data) + 1 && hasValidChecksum())) return false;
+    if (!(bufferLength == sizeof(data) + 1 && hasValidChecksum()))  {
+        valid = false;
+        return false;
+    }
 
     memcpy(&data, buffer, sizeof(data));
 
     //check if data is in valid range
-    if(!isStepperIdValid(data.stepper_id)) return false;
-    if (data.dir != 1 && data.dir != -1 && data.dir != 0) return false;
+    if(!isStepperIdValid(data.stepper_id))  {
+        valid = false;
+        return false;
+    }
+    if (data.dir != 1 && data.dir != -1 && data.dir != 0)  {
+        valid = false;
+        return false;
+    }
 
+    valid = true;
     return true;
 }
 
 bool MoveToExtraRevsPacket::executeCommand(){
-    if(valid && !hasExecuted){
+    if(valid){
         switch(data.stepper_id)
         {
             case selector_all:
@@ -276,7 +317,6 @@ bool MoveToExtraRevsPacket::executeCommand(){
                 steppers[data.stepper_id]->moveToExtraRevolutions(data.position, data.dir, data.extra_revs);
                 break;
         }
-        hasExecuted = true;
         return true;
     }
     return false;
@@ -291,19 +331,29 @@ MoveToMinStepsPacket::MoveToMinStepsPacket() : CommandPacket(){}
 MoveToMinStepsPacket::MoveToMinStepsPacket(byte (&buffer)[MAX_COMMAND_LENGTH - 1], uint8_t bufferLength) : CommandPacket(buffer, bufferLength){}
 
 bool MoveToMinStepsPacket::parseData(){
-    if (!(bufferLength == sizeof(data) + 1 && hasValidChecksum())) return false;
+    if (!(bufferLength == sizeof(data) + 1 && hasValidChecksum())) {
+        valid = false;
+        return false;
+    }
 
     memcpy(&data, buffer, sizeof(data));
 
     //check if data is in valid range
-    if(!isStepperIdValid(data.stepper_id)) return false;
-    if (data.dir != 1 && data.dir != -1 && data.dir != 0) return false;
+    if(!isStepperIdValid(data.stepper_id)) {
+        valid = false;
+        return false;
+    }
+    if (data.dir != 1 && data.dir != -1 && data.dir != 0) {
+        valid = false;
+        return false;
+    }
 
+    valid = true;
     return true;
 }
 
 bool MoveToMinStepsPacket::executeCommand(){
-    if(valid && !hasExecuted){
+    if(valid){
         switch(data.stepper_id)
         {
             case selector_all:
@@ -328,7 +378,6 @@ bool MoveToMinStepsPacket::executeCommand(){
                 steppers[data.stepper_id]->moveToMinSteps(data.position, data.dir, data.min_steps);
                 break;
         }
-        hasExecuted = true;
         return true;
     }
     return false;
@@ -343,19 +392,29 @@ MovePacket::MovePacket() : CommandPacket(){}
 MovePacket::MovePacket(byte (&buffer)[MAX_COMMAND_LENGTH - 1], uint8_t bufferLength) : CommandPacket(buffer, bufferLength){}
 
 bool MovePacket::parseData(){
-    if (!(bufferLength == sizeof(data) + 1 && hasValidChecksum())) return false;
+    if (!(bufferLength == sizeof(data) + 1 && hasValidChecksum())) {
+        valid = false;
+        return false;
+    }
 
     memcpy(&data, buffer, sizeof(data));
 
     //check if data is in valid range
-    if(!isStepperIdValid(data.stepper_id)) return false;
-    if (data.dir != 1 && data.dir != -1 && data.dir != 0) return false;
+    if(!isStepperIdValid(data.stepper_id)) {
+        valid = false;
+        return false;
+    }
+    if (data.dir != 1 && data.dir != -1 && data.dir != 0) {
+        valid = false;
+        return false;
+    }
 
+    valid = true;
     return true;
 }
 
 bool MovePacket::executeCommand(){
-    if(valid && !hasExecuted){
+    if(valid){
         switch(data.stepper_id)
         {
             case selector_all:
@@ -380,7 +439,6 @@ bool MovePacket::executeCommand(){
                 steppers[data.stepper_id]->move(data.distance * data.dir);
                 break;
         }
-        hasExecuted = true;
         return true;
     }
     return false;
@@ -396,18 +454,25 @@ StopPacket::StopPacket() : CommandPacket(){}
 StopPacket::StopPacket(byte (&buffer)[MAX_COMMAND_LENGTH - 1], uint8_t bufferLength) : CommandPacket(buffer, bufferLength){}
 
 bool StopPacket::parseData(){
-    if (!(bufferLength == sizeof(data) + 1 && hasValidChecksum())) return false;
+    if (!(bufferLength == sizeof(data) + 1 && hasValidChecksum())) {
+        valid = false;
+        return false;
+    }
 
     memcpy(&data, buffer, sizeof(data));
 
     //check if data is in valid range
-    if(!isStepperIdValid(data.stepper_id)) return false;
+    if(!isStepperIdValid(data.stepper_id)) {
+        valid = false;
+        return false;
+    }
 
+    valid = true;
     return true;
 }
 
 bool StopPacket::executeCommand(){
-    if(valid && !hasExecuted){
+    if(valid){
         switch(data.stepper_id)
         {
             case selector_all:
@@ -432,7 +497,6 @@ bool StopPacket::executeCommand(){
                 steppers[data.stepper_id]->stop();
                 break;
         }
-        hasExecuted = true;
         return true;
     }
     return false;
@@ -447,19 +511,29 @@ WigglePacket::WigglePacket() : CommandPacket(){}
 WigglePacket::WigglePacket(byte (&buffer)[MAX_COMMAND_LENGTH - 1], uint8_t bufferLength) : CommandPacket(buffer, bufferLength){}
 
 bool WigglePacket::parseData(){
-    if (!(bufferLength == sizeof(data) + 1 && hasValidChecksum())) return false;
+    if (!(bufferLength == sizeof(data) + 1 && hasValidChecksum())) {
+        valid = false;
+        return false;
+    }
 
     memcpy(&data, buffer, sizeof(data));
 
     //check if data is in valid range
-    if(!isStepperIdValid(data.stepper_id)) return false;
-    if (data.dir != 1 && data.dir != -1) return false;
+    if(!isStepperIdValid(data.stepper_id)) {
+        valid = false;
+        return false;
+    }
+    if (data.dir != 1 && data.dir != -1) {
+        valid = false;
+        return false;
+    }
 
+    valid = true;
     return true;
 }
 
 bool WigglePacket::executeCommand(){
-    if(valid && !hasExecuted){
+    if(valid){
         switch(data.stepper_id)
         {
             case selector_all:
@@ -484,7 +558,6 @@ bool WigglePacket::executeCommand(){
                 steppers[data.stepper_id]->wiggle(data.distance * data.dir);
                 break;
         }
-        hasExecuted = true;
         return true;
     }
     return false;
@@ -517,7 +590,7 @@ bool CommandQueue::pushCommand(uint8_t cmd_id, byte (&buffer)[MAX_COMMAND_LENGTH
 }
 
 bool CommandQueue::isEmpty(){
-    return commands[current_push_index].hasExecuted;
+    return commands[current_execute_index].hasExecuted;
 }
 
 const CommandData& CommandQueue::popCommand(){

@@ -55,55 +55,73 @@ void loop()
             case enable_driver:
             {
                 EnableDriverPacket packet(next_cmd_data.buffer, next_cmd_data.bufferLength);
-                packet.executeCommand();
+                if(packet.parseData()){
+                    packet.executeCommand();
+                }
                 break;
             }
             case set_speed:
             {
                 SetSpeedPacket packet(next_cmd_data.buffer, next_cmd_data.bufferLength);
-                packet.executeCommand();
+                if(packet.parseData()){
+                    packet.executeCommand();
+                }
                 break;
             }
             case set_accel:
             {
                 SetAccelPacket packet(next_cmd_data.buffer, next_cmd_data.bufferLength);
-                packet.executeCommand();
+                if(packet.parseData()){
+                    packet.executeCommand();
+                }
                 break;
             }
             case moveTo:
             {
                 MoveToPacket packet(next_cmd_data.buffer, next_cmd_data.bufferLength);
-                packet.executeCommand();
+                if(packet.parseData()){
+                    packet.executeCommand();
+                }
                 break;
             }
             case moveTo_extra_revs:
             {
                 MoveToExtraRevsPacket packet(next_cmd_data.buffer, next_cmd_data.bufferLength);
-                packet.executeCommand();
+                if(packet.parseData()){
+                    packet.executeCommand();
+                }
                 break;
             }
             case move:
             {
                 MovePacket packet(next_cmd_data.buffer, next_cmd_data.bufferLength);
-                packet.executeCommand();
+                if(packet.parseData()){
+                    packet.executeCommand();
+                }
                 break;
             }
             case stop:
             {
                 StopPacket packet(next_cmd_data.buffer, next_cmd_data.bufferLength);
-                packet.executeCommand();
+                if(packet.parseData()){
+                    packet.executeCommand();
+                }
                 break;
             }
             case wiggle:
             {
                 WigglePacket packet(next_cmd_data.buffer, next_cmd_data.bufferLength);
-                packet.executeCommand();
+                if(packet.parseData()){
+                    packet.executeCommand();
+                }
                 break;
             }
             case moveTo_min_steps:
             {
                 MoveToMinStepsPacket packet(next_cmd_data.buffer, next_cmd_data.bufferLength);
-                packet.executeCommand();
+                if(packet.parseData()){
+                    packet.executeCommand();
+                }
                 break;
             }
 
@@ -164,6 +182,7 @@ void i2c_request()
             is_running_bitmap = (1 << i) | is_running_bitmap;
         }
     }
+    
     Wire.write(is_running_bitmap);
 }
 

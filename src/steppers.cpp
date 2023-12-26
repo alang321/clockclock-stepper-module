@@ -21,12 +21,21 @@ AccelStepper *m_steppers[] = {&x1m, &x2m, &x3m, &x4m};
 
 // Initialize steppers in your CPP file
 void initializeSteppers() {
-    for (int i = 0; i < NUM_STEPPERS; i++)
+    for (int i = 0; i < NUM_STEPPERS_H; i++)
     {
-        steppers[i]->setPinModesDriver();
-        steppers[i]->setMaxSpeed(STEPPER_DEFAULT_SPEED);
-        steppers[i]->setAcceleration(STEPPER_DEFAULT_ACCEL);
-        steppers[i]->setCurrentPosition((int)(STEPS_PER_REVOLUTION * STEPPER_DEFAULT_POS_FRACTION));
-        steppers[i]->moveToSingleRevolution(0, -1);
+        h_steppers[i]->setPinModesDriver();
+        h_steppers[i]->setMaxSpeed(STEPPER_DEFAULT_SPEED);
+        h_steppers[i]->setAcceleration(STEPPER_DEFAULT_ACCEL);
+        h_steppers[i]->setCurrentPosition((int)(STEPS_PER_REVOLUTION * STEPPER_DEFAULT_POS_FRACTION));
+        h_steppers[i]->moveToSingleRevolution(0, -1);
+    }
+
+    for (int i = 0; i < NUM_STEPPERS_M; i++)
+    {
+        m_steppers[i]->setPinModesDriver();
+        m_steppers[i]->setMaxSpeed(STEPPER_DEFAULT_SPEED);
+        m_steppers[i]->setAcceleration(STEPPER_DEFAULT_ACCEL);
+        m_steppers[i]->setCurrentPosition((int)(STEPS_PER_REVOLUTION * STEPPER_DEFAULT_POS_FRACTION));
+        m_steppers[i]->moveToSingleRevolution(0, 1);
     }
 }

@@ -4,7 +4,7 @@
 
 // start to be configured
 #define BROKEN_PCB false // pcb 16
-#define I2C_ADDRESS 16 // [12;17], 12 is at top left from clockface, row first
+#define I2C_ADDRESS 12 // [12;17], 12 is at top left from clockface, row first
 // end
 
 #define NUM_STEPPERS 8
@@ -29,4 +29,4 @@
 #define MAX_ACCEL 4000
 #define MIN_ACCEL 10
 
-#define CMD_QUEUE_LENGTH 200
+#define CMD_QUEUE_LENGTH 300
