@@ -24,9 +24,9 @@
   #define ENABLE_PIN 17
 #endif
 
-#define MAX_SPEED 2000
-#define MIN_SPEED 10
-#define MAX_ACCEL 4000
-#define MIN_ACCEL 10
+#define MAX_SPEED 800
+#define MIN_SPEED 5
+#define MAX_ACCEL 500
+#define MIN_ACCEL 5
 
 #define CMD_QUEUE_LENGTH 300

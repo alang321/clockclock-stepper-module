@@ -84,10 +84,11 @@ public:
     bool valid = false;
 
     CommandPacket();
-    CommandPacket(byte (&buffer)[MAX_COMMAND_LENGTH - 1], uint8_t bufferLength);
+    CommandPacket(byte (&buffer)[MAX_COMMAND_LENGTH - 1], uint8_t bufferLength, uint8_t commandID);
     virtual bool executeCommand() = 0;
     virtual bool parseData() = 0;
 protected:
+    uint8_t _commandID = 0;
     bool hasValidChecksum();
     bool isStepperIdValid(int8_t stepper_id);
 };
@@ -98,6 +99,8 @@ protected:
 
 class EnableDriverPacket : public CommandPacket{
 public:
+    const uint8_t commandID = enable_driver;
+
     EnableDriverPacket();
     EnableDriverPacket(byte (&buffer)[MAX_COMMAND_LENGTH - 1], uint8_t bufferLength);
 
@@ -111,6 +114,8 @@ private:
 
 class SetSpeedPacket : public CommandPacket{
 public:
+    const uint8_t commandID = set_speed;
+
     SetSpeedPacket();
     SetSpeedPacket(byte (&buffer)[MAX_COMMAND_LENGTH - 1], uint8_t bufferLength);
 
@@ -123,6 +128,8 @@ private:
 
 class SetAccelPacket : public CommandPacket{
 public:
+    const uint8_t commandID = set_accel;
+
     SetAccelPacket();
     SetAccelPacket(byte (&buffer)[MAX_COMMAND_LENGTH - 1], uint8_t bufferLength);
 
@@ -136,6 +143,8 @@ private:
 
 class MoveToPacket : public CommandPacket{
 public:
+    const uint8_t commandID = moveTo;
+
     MoveToPacket();
     MoveToPacket(byte (&buffer)[MAX_COMMAND_LENGTH - 1], uint8_t bufferLength);
 
@@ -149,6 +158,8 @@ private:
 
 class MoveToExtraRevsPacket : public CommandPacket{
 public:
+    const uint8_t commandID = moveTo_extra_revs;
+
     MoveToExtraRevsPacket();
     MoveToExtraRevsPacket(byte (&buffer)[MAX_COMMAND_LENGTH - 1], uint8_t bufferLength);
 
@@ -162,6 +173,8 @@ private:
 
 class MoveToMinStepsPacket : public CommandPacket{
 public:
+    const uint8_t commandID = moveTo_min_steps;
+
     MoveToMinStepsPacket();
     MoveToMinStepsPacket(byte (&buffer)[MAX_COMMAND_LENGTH - 1], uint8_t bufferLength);
 
@@ -175,6 +188,8 @@ private:
 
 class MovePacket : public CommandPacket{
 public:
+    const uint8_t commandID = move;
+
     MovePacket();
     MovePacket(byte (&buffer)[MAX_COMMAND_LENGTH - 1], uint8_t bufferLength);
 
@@ -188,6 +203,8 @@ private:
 
 class StopPacket : public CommandPacket{
 public:
+    const uint8_t commandID = stop;
+
     StopPacket();
     StopPacket(byte (&buffer)[MAX_COMMAND_LENGTH - 1], uint8_t bufferLength);
 
@@ -201,6 +218,8 @@ private:
 
 class WigglePacket : public CommandPacket{
 public:
+    const uint8_t commandID = wiggle;
+    
     WigglePacket();
     WigglePacket(byte (&buffer)[MAX_COMMAND_LENGTH - 1], uint8_t bufferLength);
 
