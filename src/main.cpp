@@ -149,12 +149,11 @@ void i2c_receive(int numBytesReceived)
     {
         uint8_t cmd_id = 0;
         Wire.readBytes((byte *)&cmd_id, 1);
+        byte i2c_buffer[MAX_COMMAND_LENGTH - 1];
+        Wire.readBytes((byte *)&i2c_buffer, numBytesReceived - 1);
 
         if (isCommandIDValid(cmd_id))
         {
-            byte i2c_buffer[MAX_COMMAND_LENGTH - 1];
-
-            Wire.readBytes((byte *)&i2c_buffer, numBytesReceived - 1);
             i2c_cmd_queue.pushCommand(cmd_id, i2c_buffer, numBytesReceived - 1);
         }
 #if DEBUG
@@ -164,12 +163,15 @@ void i2c_receive(int numBytesReceived)
         }
 #endif
     }
-#if DEBUG
     else
     {
+        //clear the bytes form the buffer
+        byte discard_buffer[numBytesReceived];
+        Wire.readBytes((byte *)&discard_buffer, numBytesReceived);
+    #if DEBUG
         Serial.println("Invalid command byte length");
+    #endif
     }
-#endif
 }
 
 void i2c_request()
