@@ -178,13 +178,11 @@ void i2c_receive(int numBytesReceived)
 
 void i2c_request()
 {
-    byte is_running_bitmap = 0; // 1 if its still running to target
+    byte is_running_bitmap = 0; // 1 if it's still running to target
+
     for (int i = 0; i < NUM_STEPPERS; i++)
     {
-        if (steppers[i]->isRunning())
-        {
-            is_running_bitmap = (1 << i) | is_running_bitmap;
-        }
+        is_running_bitmap |= (steppers[i]->isRunning() << i);
     }
 
     Wire.write(is_running_bitmap);
