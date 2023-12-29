@@ -39,7 +39,8 @@ void setup()
 // the loop function runs over and over again forever
 void loop()
 {
-    if(!i2c_cmd_queue.isEmpty()){
+    if (!i2c_cmd_queue.isEmpty())
+    {
         CommandData next_cmd_data = i2c_cmd_queue.popCommand();
 
 #if DEBUG
@@ -49,14 +50,17 @@ void loop()
             return;
         }
 #endif
-        
-        //call the correct packet handler for each command id
-        switch (next_cmd_data.commandID)
+        // check if the checksum is correct
+        if (verifyChecksum(next_cmd_data.buffer, next_cmd_data.bufferLength) && isCommandIDValid(next_cmd_data.commandID))
         {
+            // call the correct packet handler for each command id
+            switch (next_cmd_data.commandID)
+            {
             case enable_driver:
             {
                 EnableDriverPacket packet(next_cmd_data.buffer, next_cmd_data.bufferLength);
-                if(packet.parseData()){
+                if (packet.parseData())
+                {
                     packet.executeCommand();
                 }
                 break;
@@ -64,7 +68,8 @@ void loop()
             case set_speed:
             {
                 SetSpeedPacket packet(next_cmd_data.buffer, next_cmd_data.bufferLength);
-                if(packet.parseData()){
+                if (packet.parseData())
+                {
                     packet.executeCommand();
                 }
                 break;
@@ -72,7 +77,8 @@ void loop()
             case set_accel:
             {
                 SetAccelPacket packet(next_cmd_data.buffer, next_cmd_data.bufferLength);
-                if(packet.parseData()){
+                if (packet.parseData())
+                {
                     packet.executeCommand();
                 }
                 break;
@@ -80,7 +86,8 @@ void loop()
             case moveTo:
             {
                 MoveToPacket packet(next_cmd_data.buffer, next_cmd_data.bufferLength);
-                if(packet.parseData()){
+                if (packet.parseData())
+                {
                     packet.executeCommand();
                 }
                 break;
@@ -88,7 +95,8 @@ void loop()
             case moveTo_extra_revs:
             {
                 MoveToExtraRevsPacket packet(next_cmd_data.buffer, next_cmd_data.bufferLength);
-                if(packet.parseData()){
+                if (packet.parseData())
+                {
                     packet.executeCommand();
                 }
                 break;
@@ -96,7 +104,8 @@ void loop()
             case move:
             {
                 MovePacket packet(next_cmd_data.buffer, next_cmd_data.bufferLength);
-                if(packet.parseData()){
+                if (packet.parseData())
+                {
                     packet.executeCommand();
                 }
                 break;
@@ -104,7 +113,8 @@ void loop()
             case stop:
             {
                 StopPacket packet(next_cmd_data.buffer, next_cmd_data.bufferLength);
-                if(packet.parseData()){
+                if (packet.parseData())
+                {
                     packet.executeCommand();
                 }
                 break;
@@ -112,7 +122,8 @@ void loop()
             case wiggle:
             {
                 WigglePacket packet(next_cmd_data.buffer, next_cmd_data.bufferLength);
-                if(packet.parseData()){
+                if (packet.parseData())
+                {
                     packet.executeCommand();
                 }
                 break;
@@ -120,7 +131,8 @@ void loop()
             case moveTo_min_steps:
             {
                 MoveToMinStepsPacket packet(next_cmd_data.buffer, next_cmd_data.bufferLength);
-                if(packet.parseData()){
+                if (packet.parseData())
+                {
                     packet.executeCommand();
                 }
                 break;
@@ -131,6 +143,7 @@ void loop()
                 Serial.println("Invalid command ID received, this shouldnt happen here, ignoring command");
 #endif
                 break;
+            }
         }
     }
 
@@ -150,25 +163,16 @@ void i2c_receive(int numBytesReceived)
     {
         byte i2c_buffer[MAX_COMMAND_LENGTH];
         Wire.readBytes((byte *)&i2c_buffer, numBytesReceived);
-
-        //check if the checksum is correct
-        if(verifyChecksum(i2c_buffer, numBytesReceived)){   
-            uint8_t cmd_id = static_cast<uint8_t>(i2c_buffer[0]);
-
-            if (isCommandIDValid(cmd_id))
-            {
-                i2c_cmd_queue.pushCommand(i2c_buffer, numBytesReceived);
-            }
-        }
+        i2c_cmd_queue.pushCommand(i2c_buffer, numBytesReceived);
     }
     else
     {
-        //clear the bytes form the buffer
+        // clear the bytes form the buffer
         byte discard_buffer[numBytesReceived];
         Wire.readBytes((byte *)&discard_buffer, numBytesReceived);
-    #if DEBUG
+#if DEBUG
         Serial.println("Invalid command byte length");
-    #endif
+#endif
     }
 }
 
@@ -182,14 +186,15 @@ void i2c_request()
             is_running_bitmap = (1 << i) | is_running_bitmap;
         }
     }
-    
+
     Wire.write(is_running_bitmap);
 }
 
-
-bool verifyChecksum(byte (&buffer)[MAX_COMMAND_LENGTH], uint8_t bufferLength){
+bool verifyChecksum(byte (&buffer)[MAX_COMMAND_LENGTH], uint8_t bufferLength)
+{
     uint8_t checksum = 0;
-    for(int i = 0; i < bufferLength - 1; i++){
+    for (int i = 0; i < bufferLength - 1; i++)
+    {
         checksum += buffer[i];
     }
     return checksum == buffer[bufferLength - 1];

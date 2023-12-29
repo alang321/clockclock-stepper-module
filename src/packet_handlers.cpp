@@ -555,6 +555,8 @@ bool CommandQueue::pushCommand(byte (&buffer)[MAX_COMMAND_LENGTH], uint8_t buffe
     
     if(!commands[current_push_index].hasExecuted){
         //if the command at the current_push_index has not been executed yet, push the execute index forward 
+        //this keeps the queue fifo but allows overwriting of commands that have not been executed yet
+        //if the queue is full
         current_execute_index = (current_execute_index + 1) % CMD_QUEUE_LENGTH; 
 
         current_push_index = (current_push_index + 1) % CMD_QUEUE_LENGTH;
