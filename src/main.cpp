@@ -7,6 +7,7 @@
 // i2c handlers
 void i2c_receive(int numBytesReceived);
 void i2c_request();
+bool verifyChecksum(byte (&buffer)[MAX_COMMAND_LENGTH], uint8_t bufferLength);
 
 CommandQueue i2c_cmd_queue;
 
@@ -147,21 +148,18 @@ void i2c_receive(int numBytesReceived)
 {
     if (numBytesReceived > 0 && numBytesReceived <= MAX_COMMAND_LENGTH)
     {
-        uint8_t cmd_id = 0;
-        Wire.readBytes((byte *)&cmd_id, 1);
-        byte i2c_buffer[MAX_COMMAND_LENGTH - 1];
-        Wire.readBytes((byte *)&i2c_buffer, numBytesReceived - 1);
+        byte i2c_buffer[MAX_COMMAND_LENGTH];
+        Wire.readBytes((byte *)&i2c_buffer, numBytesReceived);
 
-        if (isCommandIDValid(cmd_id))
-        {
-            i2c_cmd_queue.pushCommand(cmd_id, i2c_buffer, numBytesReceived - 1);
+        //check if the checksum is correct
+        if(verifyChecksum(i2c_buffer, numBytesReceived)){   
+            uint8_t cmd_id = static_cast<uint8_t>(i2c_buffer[0]);
+
+            if (isCommandIDValid(cmd_id))
+            {
+                i2c_cmd_queue.pushCommand(i2c_buffer, numBytesReceived);
+            }
         }
-#if DEBUG
-        else
-        {
-            Serial.println("Invalid command ID received");
-        }
-#endif
     }
     else
     {
@@ -186,6 +184,15 @@ void i2c_request()
     }
     
     Wire.write(is_running_bitmap);
+}
+
+
+bool verifyChecksum(byte (&buffer)[MAX_COMMAND_LENGTH], uint8_t bufferLength){
+    uint8_t checksum = 0;
+    for(int i = 0; i < bufferLength - 1; i++){
+        checksum += buffer[i];
+    }
+    return checksum == buffer[bufferLength - 1];
 }
 
 #pragma endregion

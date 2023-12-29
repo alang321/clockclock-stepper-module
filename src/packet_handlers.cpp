@@ -14,32 +14,11 @@ CommandPacket::CommandPacket(){
 }
 
 //abstract class for packet data
-CommandPacket::CommandPacket(byte (&buffer)[MAX_COMMAND_LENGTH - 1], uint8_t bufferLength, uint8_t commandID){
+CommandPacket::CommandPacket(byte (&buffer)[MAX_COMMAND_LENGTH], uint8_t bufferLength){
     memcpy(this->buffer, buffer, bufferLength);
     this->bufferLength = bufferLength;
-    this->_commandID = commandID;
 }
 
-bool CommandPacket::hasValidChecksum(){
-    uint8_t checksum = 0;
-    for(int i = 0; i < bufferLength - 1; i++){
-        checksum += buffer[i];
-    }
-    checksum += _commandID;
-#if DEBUG
-    bool checksum_valid = checksum == buffer[bufferLength - 1];
-    if(!checksum_valid){
-        Serial.println("Invalid checksum");
-        Serial.print("Checksum: ");
-        Serial.println(checksum);
-        Serial.print("Checksum byte: ");
-        Serial.println(buffer[bufferLength - 1]);
-    }
-    return checksum_valid;
-#else
-    return checksum == buffer[bufferLength - 1];
-#endif
-}
 
 bool CommandPacket::isStepperIdValid(int8_t stepper_id){
     return stepper_id >= STEPPER_ID_MIN && stepper_id <= STEPPER_ID_MAX;
@@ -51,10 +30,10 @@ bool CommandPacket::isStepperIdValid(int8_t stepper_id){
 
 EnableDriverPacket::EnableDriverPacket() : CommandPacket(){}
 
-EnableDriverPacket::EnableDriverPacket(byte (&buffer)[MAX_COMMAND_LENGTH - 1], uint8_t bufferLength) : CommandPacket(buffer, bufferLength, commandID){}
+EnableDriverPacket::EnableDriverPacket(byte (&buffer)[MAX_COMMAND_LENGTH], uint8_t bufferLength) : CommandPacket(buffer, bufferLength){}
 
 bool EnableDriverPacket::parseData(){
-    if (!(bufferLength == sizeof(data) + 1 && hasValidChecksum())) 
+    if (!(bufferLength == sizeof(data) + 1)) 
     {
         valid = false;
         return false;
@@ -81,10 +60,10 @@ bool EnableDriverPacket::executeCommand(){
 
 SetSpeedPacket::SetSpeedPacket() : CommandPacket(){}
 
-SetSpeedPacket::SetSpeedPacket(byte (&buffer)[MAX_COMMAND_LENGTH - 1], uint8_t bufferLength) : CommandPacket(buffer, bufferLength, commandID){}
+SetSpeedPacket::SetSpeedPacket(byte (&buffer)[MAX_COMMAND_LENGTH], uint8_t bufferLength) : CommandPacket(buffer, bufferLength){}
 
 bool SetSpeedPacket::parseData(){
-    if (!(bufferLength == sizeof(data) + 1 && hasValidChecksum())) {
+    if (!(bufferLength == sizeof(data) + 1)) {
         valid = false;
         return false;
     }
@@ -143,10 +122,10 @@ bool SetSpeedPacket::executeCommand(){
 
 SetAccelPacket::SetAccelPacket() : CommandPacket(){}
 
-SetAccelPacket::SetAccelPacket(byte (&buffer)[MAX_COMMAND_LENGTH - 1], uint8_t bufferLength) : CommandPacket(buffer, bufferLength, commandID){}
+SetAccelPacket::SetAccelPacket(byte (&buffer)[MAX_COMMAND_LENGTH], uint8_t bufferLength) : CommandPacket(buffer, bufferLength){}
 
 bool SetAccelPacket::parseData(){
-    if (!(bufferLength == sizeof(data) + 1 && hasValidChecksum()))  {
+    if (!(bufferLength == sizeof(data) + 1))  {
         valid = false;
         return false;
     }
@@ -208,10 +187,10 @@ bool SetAccelPacket::executeCommand(){
 
 MoveToPacket::MoveToPacket() : CommandPacket(){}
 
-MoveToPacket::MoveToPacket(byte (&buffer)[MAX_COMMAND_LENGTH - 1], uint8_t bufferLength) : CommandPacket(buffer, bufferLength, commandID){}
+MoveToPacket::MoveToPacket(byte (&buffer)[MAX_COMMAND_LENGTH], uint8_t bufferLength) : CommandPacket(buffer, bufferLength){}
 
 bool MoveToPacket::parseData(){
-    if (!(bufferLength == sizeof(data) + 1 && hasValidChecksum())) {
+    if (!(bufferLength == sizeof(data) + 1)) {
         valid = false;
         return false;
     }
@@ -269,10 +248,10 @@ bool MoveToPacket::executeCommand(){
 
 MoveToExtraRevsPacket::MoveToExtraRevsPacket() : CommandPacket(){}
 
-MoveToExtraRevsPacket::MoveToExtraRevsPacket(byte (&buffer)[MAX_COMMAND_LENGTH - 1], uint8_t bufferLength) : CommandPacket(buffer, bufferLength, commandID){}
+MoveToExtraRevsPacket::MoveToExtraRevsPacket(byte (&buffer)[MAX_COMMAND_LENGTH], uint8_t bufferLength) : CommandPacket(buffer, bufferLength){}
 
 bool MoveToExtraRevsPacket::parseData(){
-    if (!(bufferLength == sizeof(data) + 1 && hasValidChecksum()))  {
+    if (!(bufferLength == sizeof(data) + 1))  {
         valid = false;
         return false;
     }
@@ -330,10 +309,10 @@ bool MoveToExtraRevsPacket::executeCommand(){
 
 MoveToMinStepsPacket::MoveToMinStepsPacket() : CommandPacket(){}
 
-MoveToMinStepsPacket::MoveToMinStepsPacket(byte (&buffer)[MAX_COMMAND_LENGTH - 1], uint8_t bufferLength) : CommandPacket(buffer, bufferLength, commandID){}
+MoveToMinStepsPacket::MoveToMinStepsPacket(byte (&buffer)[MAX_COMMAND_LENGTH], uint8_t bufferLength) : CommandPacket(buffer, bufferLength){}
 
 bool MoveToMinStepsPacket::parseData(){
-    if (!(bufferLength == sizeof(data) + 1 && hasValidChecksum())) {
+    if (!(bufferLength == sizeof(data) + 1)) {
         valid = false;
         return false;
     }
@@ -391,10 +370,10 @@ bool MoveToMinStepsPacket::executeCommand(){
 
 MovePacket::MovePacket() : CommandPacket(){}
 
-MovePacket::MovePacket(byte (&buffer)[MAX_COMMAND_LENGTH - 1], uint8_t bufferLength) : CommandPacket(buffer, bufferLength, commandID){}
+MovePacket::MovePacket(byte (&buffer)[MAX_COMMAND_LENGTH], uint8_t bufferLength) : CommandPacket(buffer, bufferLength){}
 
 bool MovePacket::parseData(){
-    if (!(bufferLength == sizeof(data) + 1 && hasValidChecksum())) {
+    if (!(bufferLength == sizeof(data) + 1)) {
         valid = false;
         return false;
     }
@@ -453,10 +432,10 @@ bool MovePacket::executeCommand(){
 
 StopPacket::StopPacket() : CommandPacket(){}
 
-StopPacket::StopPacket(byte (&buffer)[MAX_COMMAND_LENGTH - 1], uint8_t bufferLength) : CommandPacket(buffer, bufferLength, commandID){}
+StopPacket::StopPacket(byte (&buffer)[MAX_COMMAND_LENGTH], uint8_t bufferLength) : CommandPacket(buffer, bufferLength){}
 
 bool StopPacket::parseData(){
-    if (!(bufferLength == sizeof(data) + 1 && hasValidChecksum())) {
+    if (!(bufferLength == sizeof(data) + 1)) {
         valid = false;
         return false;
     }
@@ -510,10 +489,10 @@ bool StopPacket::executeCommand(){
 
 WigglePacket::WigglePacket() : CommandPacket(){}
 
-WigglePacket::WigglePacket(byte (&buffer)[MAX_COMMAND_LENGTH - 1], uint8_t bufferLength) : CommandPacket(buffer, bufferLength, commandID){}
+WigglePacket::WigglePacket(byte (&buffer)[MAX_COMMAND_LENGTH], uint8_t bufferLength) : CommandPacket(buffer, bufferLength){}
 
 bool WigglePacket::parseData(){
-    if (!(bufferLength == sizeof(data) + 1 && hasValidChecksum())) {
+    if (!(bufferLength == sizeof(data) + 1)) {
         valid = false;
         return false;
     }
@@ -569,10 +548,10 @@ bool WigglePacket::executeCommand(){
 
 #pragma region Command Queue
 
-bool CommandQueue::pushCommand(uint8_t cmd_id, byte (&buffer)[MAX_COMMAND_LENGTH - 1], uint8_t bufferLength){
+bool CommandQueue::pushCommand(byte (&buffer)[MAX_COMMAND_LENGTH], uint8_t bufferLength){
     commands[current_push_index].bufferLength = bufferLength;
     memcpy(commands[current_push_index].buffer, buffer, bufferLength);
-    commands[current_push_index].commandID = cmd_id;
+    commands[current_push_index].commandID = static_cast<uint8_t>(commands[current_push_index].buffer[0]);
     
     if(!commands[current_push_index].hasExecuted){
         //if the command at the current_push_index has not been executed yet, push the execute index forward 
