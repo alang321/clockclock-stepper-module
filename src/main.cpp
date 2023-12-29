@@ -159,7 +159,7 @@ void loop()
 
 void i2c_receive(int numBytesReceived)
 {
-    if (numBytesReceived > 0 && numBytesReceived <= MAX_COMMAND_LENGTH)
+    if (numBytesReceived >= 2 && numBytesReceived <= MAX_COMMAND_LENGTH)
     {
         byte i2c_buffer[MAX_COMMAND_LENGTH];
         Wire.readBytes((byte *)&i2c_buffer, numBytesReceived);
