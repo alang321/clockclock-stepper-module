@@ -15,13 +15,13 @@ CommandQueue i2c_cmd_queue;
 // the setup function runs once when you press reset or power the board
 void setup()
 {
-    // initialize steppers
-    initializeSteppers();
+    delay(20); //ensure vid6606 stepper drivers are powered up properly, very conservative
 
     // set enable_pin to high so no weird behaviour happens during mcu startup (has external pull down)
-    delay(5);
     pinMode(ENABLE_PIN, OUTPUT);
     digitalWrite(ENABLE_PIN, HIGH);
+    
+    initializeSteppers();
 
     // Initialize as i2c slave
     Wire.setSCL(I2C_SCL_PIN);
