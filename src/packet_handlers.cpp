@@ -4,30 +4,29 @@
 #include "config.h"
 #include "steppers.h"
 
-bool isCommandIDValid(uint8_t cmd_id){
-    return cmd_id >= 0 && cmd_id < CMD_COUNT;
-}
-
 #pragma region Abstract Packet Class
 
-CommandPacket::CommandPacket(){
-}
+CommandPacket::CommandPacket() {}
 
-//abstract class for packet data
-CommandPacket::CommandPacket(byte (&buffer)[MAX_COMMAND_LENGTH], uint8_t bufferLength){
+// abstract class for packet data
+CommandPacket::CommandPacket(byte (&buffer)[MAX_COMMAND_LENGTH], uint8_t bufferLength)
+{
     memcpy(this->buffer, buffer, bufferLength);
     this->bufferLength = bufferLength;
 
-    valid = verifyChecksum() && parseData();
+    valid = verifyChecksum();
 }
 
-bool CommandPacket::isStepperIdValid(int8_t stepper_id){
+bool CommandPacket::isStepperIdValid(int8_t stepper_id)
+{
     return stepper_id >= STEPPER_ID_MIN && stepper_id <= STEPPER_ID_MAX;
 }
 
-bool CommandPacket::verifyChecksum(){
+bool CommandPacket::verifyChecksum()
+{
     uint8_t checksum = 0;
-    for(int i = 0; i < bufferLength - 1; i++){
+    for (int i = 0; i < bufferLength - 1; i++)
+    {
         checksum += buffer[i];
     }
     return checksum == buffer[bufferLength - 1];
@@ -37,24 +36,34 @@ bool CommandPacket::verifyChecksum(){
 
 #pragma region Enable Driver Packet
 
-EnableDriverPacket::EnableDriverPacket() : CommandPacket(){}
+EnableDriverPacket::EnableDriverPacket() : CommandPacket() {}
 
-EnableDriverPacket::EnableDriverPacket(byte (&buffer)[MAX_COMMAND_LENGTH], uint8_t bufferLength) : CommandPacket(buffer, bufferLength){}
-
-bool EnableDriverPacket::parseData(){
-    if (!(bufferLength == sizeof(data) + 1)) return false;
-
-    memcpy(&data, buffer, sizeof(data));
-
-    if(data.cmd_id != commandID) return false;
-
-    if(data.enable != 0 && data.enable != 1) return false;
-
-    return true;
+EnableDriverPacket::EnableDriverPacket(byte (&buffer)[MAX_COMMAND_LENGTH], uint8_t bufferLength) : CommandPacket(buffer, bufferLength)
+{
+    valid = parseData();
 }
 
-bool EnableDriverPacket::executeCommand(){
-    if(valid){
+bool EnableDriverPacket::parseData()
+{
+    if (valid)
+    {
+        if (!(bufferLength == sizeof(data) + 1))
+            return false;
+
+        memcpy(&data, buffer, sizeof(data));
+
+        if (data.cmd_id != commandID)
+            return false;
+
+        return true;
+    }
+    return false;
+}
+
+bool EnableDriverPacket::executeCommand()
+{
+    if (valid)
+    {
         digitalWrite(ENABLE_PIN, data.enable);
         return true;
     }
@@ -65,47 +74,62 @@ bool EnableDriverPacket::executeCommand(){
 
 #pragma region Set Speed Packet
 
-SetSpeedPacket::SetSpeedPacket() : CommandPacket(){}
+SetSpeedPacket::SetSpeedPacket() : CommandPacket() {}
 
-SetSpeedPacket::SetSpeedPacket(byte (&buffer)[MAX_COMMAND_LENGTH], uint8_t bufferLength) : CommandPacket(buffer, bufferLength){}
-
-bool SetSpeedPacket::parseData(){
-    if (!(bufferLength == sizeof(data) + 1)) return false;
-
-    memcpy(&data, buffer, sizeof(data));
-
-    if(data.cmd_id != commandID) return false;
-
-    if(data.speed < MIN_SPEED || data.speed > MAX_SPEED) return false;
-
-    if(!isStepperIdValid(data.stepper_id)) return false;
-
-    return true;
+SetSpeedPacket::SetSpeedPacket(byte (&buffer)[MAX_COMMAND_LENGTH], uint8_t bufferLength) : CommandPacket(buffer, bufferLength)
+{
+    valid = parseData();
 }
 
-bool SetSpeedPacket::executeCommand(){
-    if(valid){
-        switch(data.stepper_id)
+bool SetSpeedPacket::parseData()
+{
+    if (valid)
+    {
+        if (!(bufferLength == sizeof(data) + 1))
+            return false;
+
+        memcpy(&data, buffer, sizeof(data));
+
+        if (data.cmd_id != commandID)
+            return false;
+        if (data.speed < MIN_SPEED || data.speed > MAX_SPEED)
+            return false;
+        if (!isStepperIdValid(data.stepper_id))
+            return false;
+
+        return true;
+    }
+    return false;
+}
+
+bool SetSpeedPacket::executeCommand()
+{
+    if (valid)
+    {
+        switch (data.stepper_id)
         {
-            case selector_all:
-            for(int i = 0; i < NUM_STEPPERS; i++){
+        case selector_all:
+            for (int i = 0; i < NUM_STEPPERS; i++)
+            {
                 steppers[i]->setMaxSpeed(data.speed);
             }
             break;
 
-            case selector_hour:
-            for(int i = 0; i < NUM_STEPPERS_H; i++){
+        case selector_hour:
+            for (int i = 0; i < NUM_STEPPERS_H; i++)
+            {
                 h_steppers[i]->setMaxSpeed(data.speed);
             }
             break;
 
-            case selector_minute:
-            for(int i = 0; i < NUM_STEPPERS_M; i++){
+        case selector_minute:
+            for (int i = 0; i < NUM_STEPPERS_M; i++)
+            {
                 m_steppers[i]->setMaxSpeed(data.speed);
             }
             break;
-            
-            default: //all the other stepper ids selecting individual steppers
+
+        default: // all the other stepper ids selecting individual steppers
             steppers[data.stepper_id]->setMaxSpeed(data.speed);
             break;
         }
@@ -118,50 +142,71 @@ bool SetSpeedPacket::executeCommand(){
 
 #pragma region Set Accel Packet
 
-SetAccelPacket::SetAccelPacket() : CommandPacket(){}
+SetAccelPacket::SetAccelPacket() : CommandPacket() {}
 
-SetAccelPacket::SetAccelPacket(byte (&buffer)[MAX_COMMAND_LENGTH], uint8_t bufferLength) : CommandPacket(buffer, bufferLength){}
-
-bool SetAccelPacket::parseData(){
-    if (!(bufferLength == sizeof(data) + 1)) return false;
-
-    memcpy(&data, buffer, sizeof(data));
-
-    if(data.cmd_id != commandID) return false;
-
-    if(data.accel < MAX_ACCEL || data.accel > MAX_ACCEL) return false;
-
-    if(!isStepperIdValid(data.stepper_id)) return false;
-
-    return true;
+SetAccelPacket::SetAccelPacket(byte (&buffer)[MAX_COMMAND_LENGTH], uint8_t bufferLength) : CommandPacket(buffer, bufferLength) 
+{
+    valid = parseData();
 }
 
-bool SetAccelPacket::executeCommand(){
-    if(valid){
-        switch(data.stepper_id)
+bool SetAccelPacket::parseData()
+{
+    if (valid)
+    {
+        if (!(bufferLength == sizeof(data) + 1))
+            return false;
+
+        memcpy(&data, buffer, sizeof(data));
+
+        if (data.cmd_id != commandID)
+            return false;
+        if (data.accel < MAX_ACCEL || data.accel > MAX_ACCEL)
+            return false;
+        if (!isStepperIdValid(data.stepper_id))
+            return false;
+
+        return true;
+    }
+    return false;
+}
+
+bool SetAccelPacket::executeCommand()
+{
+    if (valid)
+    {
+        switch (data.stepper_id)
         {
-        case selector_all:{
+        case selector_all:
+        {
             float c0 = steppers[0]->setAcceleration(data.accel);
-            for(int i = 1; i < NUM_STEPPERS; i++){
+            for (int i = 1; i < NUM_STEPPERS; i++)
+            {
                 steppers[i]->setAcceleration(data.accel, c0);
             }
-        }break;
+        }
+        break;
 
-        case selector_hour:{
+        case selector_hour:
+        {
             float c0 = h_steppers[0]->setAcceleration(data.accel);
-            for(int i = 1; i < NUM_STEPPERS_H; i++){
+            for (int i = 1; i < NUM_STEPPERS_H; i++)
+            {
                 h_steppers[i]->setAcceleration(data.accel, c0);
             }
-            }break;
+        }
+        break;
 
-        case selector_minute:{
+        case selector_minute:
+        {
             float c0 = m_steppers[0]->setAcceleration(data.accel);
-            for(int i = 1; i < NUM_STEPPERS_M; i++){
+            for (int i = 1; i < NUM_STEPPERS_M; i++)
+            {
                 m_steppers[i]->setAcceleration(data.accel, c0);
             }
-            }break;
+        }
+        break;
 
-        default: //all the other stepper ids selecting individual steppers
+        default: // all the other stepper ids selecting individual steppers
             steppers[data.stepper_id]->setAcceleration(data.accel);
             break;
         }
@@ -174,48 +219,65 @@ bool SetAccelPacket::executeCommand(){
 
 #pragma region MoveTo Packet
 
-MoveToPacket::MoveToPacket() : CommandPacket(){}
+MoveToPacket::MoveToPacket() : CommandPacket() {}
 
-MoveToPacket::MoveToPacket(byte (&buffer)[MAX_COMMAND_LENGTH], uint8_t bufferLength) : CommandPacket(buffer, bufferLength){}
-
-bool MoveToPacket::parseData(){
-    if (!(bufferLength == sizeof(data) + 1)) return false;
-
-    memcpy(&data, buffer, sizeof(data));
-
-    if (data.cmd_id != commandID) return false;
-
-    //check if data is in valid range
-    if(!isStepperIdValid(data.stepper_id)) return false;
-
-    if (data.dir != 1 && data.dir != -1 && data.dir != 0) return false;
-
-    return true;
+MoveToPacket::MoveToPacket(byte (&buffer)[MAX_COMMAND_LENGTH], uint8_t bufferLength) : CommandPacket(buffer, bufferLength) 
+{
+    valid = parseData();
 }
 
-bool MoveToPacket::executeCommand(){
-    if(valid){
-        switch(data.stepper_id)
+bool MoveToPacket::parseData()
+{
+    if (valid)
+    {
+        if (!(bufferLength == sizeof(data) + 1))
+            return false;
+
+        memcpy(&data, buffer, sizeof(data));
+
+        if (data.cmd_id != commandID)
+            return false;
+
+        // check if data is in valid range
+        if (!isStepperIdValid(data.stepper_id))
+            return false;
+
+        if (data.dir != 1 && data.dir != -1 && data.dir != 0)
+            return false;
+
+        return true;
+    }
+    return false;
+}
+
+bool MoveToPacket::executeCommand()
+{
+    if (valid)
+    {
+        switch (data.stepper_id)
         {
         case selector_all:
-            for(int i = 0; i < NUM_STEPPERS; i++){
-            steppers[i]->moveToSingleRevolution(data.position, data.dir);
+            for (int i = 0; i < NUM_STEPPERS; i++)
+            {
+                steppers[i]->moveToSingleRevolution(data.position, data.dir);
             }
             break;
 
         case selector_hour:
-            for(int i = 0; i < NUM_STEPPERS_H; i++){
-            h_steppers[i]->moveToSingleRevolution(data.position, data.dir);
+            for (int i = 0; i < NUM_STEPPERS_H; i++)
+            {
+                h_steppers[i]->moveToSingleRevolution(data.position, data.dir);
             }
             break;
 
         case selector_minute:
-            for(int i = 0; i < NUM_STEPPERS_M; i++){
-            m_steppers[i]->moveToSingleRevolution(data.position, data.dir);
+            for (int i = 0; i < NUM_STEPPERS_M; i++)
+            {
+                m_steppers[i]->moveToSingleRevolution(data.position, data.dir);
             }
             break;
 
-        default: //all the other stepper ids selecting individual steppers
+        default: // all the other stepper ids selecting individual steppers
             steppers[data.stepper_id]->moveToSingleRevolution(data.position, data.dir);
             break;
         }
@@ -228,50 +290,64 @@ bool MoveToPacket::executeCommand(){
 
 #pragma region MoveTo Extra Revs Packet
 
-MoveToExtraRevsPacket::MoveToExtraRevsPacket() : CommandPacket(){}
+MoveToExtraRevsPacket::MoveToExtraRevsPacket() : CommandPacket() {}
 
-MoveToExtraRevsPacket::MoveToExtraRevsPacket(byte (&buffer)[MAX_COMMAND_LENGTH], uint8_t bufferLength) : CommandPacket(buffer, bufferLength){}
-
-bool MoveToExtraRevsPacket::parseData(){
-    if (!(bufferLength == sizeof(data) + 1)) return false;
-
-    memcpy(&data, buffer, sizeof(data));
-
-    if (data.cmd_id != commandID) return false;
-
-    //check if data is in valid range
-    if(!isStepperIdValid(data.stepper_id)) return false;
-
-    if (data.dir != 1 && data.dir != -1 && data.dir != 0) return false;
-
-    return true;
+MoveToExtraRevsPacket::MoveToExtraRevsPacket(byte (&buffer)[MAX_COMMAND_LENGTH], uint8_t bufferLength) : CommandPacket(buffer, bufferLength)
+{
+    valid = parseData();
 }
 
-bool MoveToExtraRevsPacket::executeCommand(){
-    if(valid){
-        switch(data.stepper_id)
+bool MoveToExtraRevsPacket::parseData()
+{
+    if (valid)
+    {
+        if (!(bufferLength == sizeof(data) + 1))
+            return false;
+
+        memcpy(&data, buffer, sizeof(data));
+
+        if (data.cmd_id != commandID)
+            return false;
+        if (!isStepperIdValid(data.stepper_id))
+            return false;
+        if (data.dir != 1 && data.dir != -1 && data.dir != 0)
+            return false;
+
+        return true;
+    }
+    return false;
+}
+
+bool MoveToExtraRevsPacket::executeCommand()
+{
+    if (valid)
+    {
+        switch (data.stepper_id)
         {
-            case selector_all:
-                for(int i = 0; i < NUM_STEPPERS; i++){
-                    steppers[i]->moveToExtraRevolutions(data.position, data.dir, data.extra_revs);
-                }
+        case selector_all:
+            for (int i = 0; i < NUM_STEPPERS; i++)
+            {
+                steppers[i]->moveToExtraRevolutions(data.position, data.dir, data.extra_revs);
+            }
             break;
 
-            case selector_hour:
-                for(int i = 0; i < NUM_STEPPERS_H; i++){
-                    h_steppers[i]->moveToExtraRevolutions(data.position, data.dir, data.extra_revs);
-                }
+        case selector_hour:
+            for (int i = 0; i < NUM_STEPPERS_H; i++)
+            {
+                h_steppers[i]->moveToExtraRevolutions(data.position, data.dir, data.extra_revs);
+            }
             break;
 
-            case selector_minute:
-                for(int i = 0; i < NUM_STEPPERS_M; i++){
-                    m_steppers[i]->moveToExtraRevolutions(data.position, data.dir, data.extra_revs);
-                }
+        case selector_minute:
+            for (int i = 0; i < NUM_STEPPERS_M; i++)
+            {
+                m_steppers[i]->moveToExtraRevolutions(data.position, data.dir, data.extra_revs);
+            }
             break;
 
-            default: //all the other stepper ids selecting individual steppers
-                steppers[data.stepper_id]->moveToExtraRevolutions(data.position, data.dir, data.extra_revs);
-                break;
+        default: // all the other stepper ids selecting individual steppers
+            steppers[data.stepper_id]->moveToExtraRevolutions(data.position, data.dir, data.extra_revs);
+            break;
         }
         return true;
     }
@@ -282,47 +358,64 @@ bool MoveToExtraRevsPacket::executeCommand(){
 
 #pragma region MoveTo Min Steps Packet
 
-MoveToMinStepsPacket::MoveToMinStepsPacket() : CommandPacket(){}
+MoveToMinStepsPacket::MoveToMinStepsPacket() : CommandPacket() {}
 
-MoveToMinStepsPacket::MoveToMinStepsPacket(byte (&buffer)[MAX_COMMAND_LENGTH], uint8_t bufferLength) : CommandPacket(buffer, bufferLength){}
-
-bool MoveToMinStepsPacket::parseData(){
-    if (!(bufferLength == sizeof(data) + 1)) return false;
-
-    memcpy(&data, buffer, sizeof(data));
-
-    if (data.cmd_id != commandID) return false;
-    if(!isStepperIdValid(data.stepper_id)) return false;
-    if (data.dir != 1 && data.dir != -1 && data.dir != 0) return false;
-
-    return true;
+MoveToMinStepsPacket::MoveToMinStepsPacket(byte (&buffer)[MAX_COMMAND_LENGTH], uint8_t bufferLength) : CommandPacket(buffer, bufferLength) 
+{
+    valid = parseData();
 }
 
-bool MoveToMinStepsPacket::executeCommand(){
-    if(valid){
-        switch(data.stepper_id)
+bool MoveToMinStepsPacket::parseData()
+{
+    if (valid)
+    {
+        if (!(bufferLength == sizeof(data) + 1))
+            return false;
+
+        memcpy(&data, buffer, sizeof(data));
+
+        if (data.cmd_id != commandID)
+            return false;
+        if (!isStepperIdValid(data.stepper_id))
+            return false;
+        if (data.dir != 1 && data.dir != -1 && data.dir != 0)
+            return false;
+
+        return true;
+    }
+    return false;
+}
+
+bool MoveToMinStepsPacket::executeCommand()
+{
+    if (valid)
+    {
+        switch (data.stepper_id)
         {
-            case selector_all:
-                for(int i = 0; i < NUM_STEPPERS; i++){
-                    steppers[i]->moveToMinSteps(data.position, data.dir, data.min_steps);
-                }
+        case selector_all:
+            for (int i = 0; i < NUM_STEPPERS; i++)
+            {
+                steppers[i]->moveToMinSteps(data.position, data.dir, data.min_steps);
+            }
             break;
 
-            case selector_hour:
-                for(int i = 0; i < NUM_STEPPERS_H; i++){
-                    h_steppers[i]->moveToMinSteps(data.position, data.dir, data.min_steps);
-                }
+        case selector_hour:
+            for (int i = 0; i < NUM_STEPPERS_H; i++)
+            {
+                h_steppers[i]->moveToMinSteps(data.position, data.dir, data.min_steps);
+            }
             break;
 
-            case selector_minute:
-                for(int i = 0; i < NUM_STEPPERS_M; i++){
-                    m_steppers[i]->moveToMinSteps(data.position, data.dir, data.min_steps);
-                }
+        case selector_minute:
+            for (int i = 0; i < NUM_STEPPERS_M; i++)
+            {
+                m_steppers[i]->moveToMinSteps(data.position, data.dir, data.min_steps);
+            }
             break;
 
-            default: //all the other stepper ids selecting individual steppers
-                steppers[data.stepper_id]->moveToMinSteps(data.position, data.dir, data.min_steps);
-                break;
+        default: // all the other stepper ids selecting individual steppers
+            steppers[data.stepper_id]->moveToMinSteps(data.position, data.dir, data.min_steps);
+            break;
         }
         return true;
     }
@@ -333,98 +426,130 @@ bool MoveToMinStepsPacket::executeCommand(){
 
 #pragma region Move Packet
 
-MovePacket::MovePacket() : CommandPacket(){}
+MovePacket::MovePacket() : CommandPacket() {}
 
-MovePacket::MovePacket(byte (&buffer)[MAX_COMMAND_LENGTH], uint8_t bufferLength) : CommandPacket(buffer, bufferLength){}
-
-bool MovePacket::parseData(){
-    if (!(bufferLength == sizeof(data) + 1)) return false;
-
-    memcpy(&data, buffer, sizeof(data));
-
-    if (data.cmd_id != commandID) return false;
-    if(!isStepperIdValid(data.stepper_id)) return false;
-    if (data.dir != 1 && data.dir != -1 && data.dir != 0) return false;
-
-    return true;
+MovePacket::MovePacket(byte (&buffer)[MAX_COMMAND_LENGTH], uint8_t bufferLength) : CommandPacket(buffer, bufferLength) 
+{
+    valid = parseData();
 }
 
-bool MovePacket::executeCommand(){
-    if(valid){
-        switch(data.stepper_id)
+bool MovePacket::parseData()
+{
+    if (valid)
+    {
+        if (!(bufferLength == sizeof(data) + 1))
+            return false;
+
+        memcpy(&data, buffer, sizeof(data));
+
+        if (data.cmd_id != commandID)
+            return false;
+        if (!isStepperIdValid(data.stepper_id))
+            return false;
+        if (data.dir != 1 && data.dir != -1 && data.dir != 0)
+            return false;
+
+        return true;
+    }
+    return false;
+}
+
+bool MovePacket::executeCommand()
+{
+    if (valid)
+    {
+        switch (data.stepper_id)
         {
-            case selector_all:
-                for(int i = 0; i < NUM_STEPPERS; i++){
-                    steppers[i]->moveTarget(data.distance * data.dir);
-                }
+        case selector_all:
+            for (int i = 0; i < NUM_STEPPERS; i++)
+            {
+                steppers[i]->moveTarget(data.distance * data.dir);
+            }
             break;
 
-            case selector_hour:
-                for(int i = 0; i < NUM_STEPPERS_H; i++){
-                    h_steppers[i]->moveTarget(data.distance * data.dir);
-                }
+        case selector_hour:
+            for (int i = 0; i < NUM_STEPPERS_H; i++)
+            {
+                h_steppers[i]->moveTarget(data.distance * data.dir);
+            }
             break;
 
-            case selector_minute:
-                for(int i = 0; i < NUM_STEPPERS_M; i++){
-                    m_steppers[i]->moveTarget(data.distance * data.dir);
-                }
+        case selector_minute:
+            for (int i = 0; i < NUM_STEPPERS_M; i++)
+            {
+                m_steppers[i]->moveTarget(data.distance * data.dir);
+            }
             break;
 
-            default: //all the other stepper ids selecting individual steppers
-                steppers[data.stepper_id]->move(data.distance * data.dir);
-                break;
+        default: // all the other stepper ids selecting individual steppers
+            steppers[data.stepper_id]->move(data.distance * data.dir);
+            break;
         }
         return true;
     }
     return false;
 }
 
-
 #pragma endregion
 
 #pragma region Stop Packet
 
-StopPacket::StopPacket() : CommandPacket(){}
+StopPacket::StopPacket() : CommandPacket() {}
 
-StopPacket::StopPacket(byte (&buffer)[MAX_COMMAND_LENGTH], uint8_t bufferLength) : CommandPacket(buffer, bufferLength){}
-
-bool StopPacket::parseData(){
-    if (!(bufferLength == sizeof(data) + 1)) return false;
-
-    memcpy(&data, buffer, sizeof(data));
-
-    if (data.cmd_id != commandID) return false;
-    if(!isStepperIdValid(data.stepper_id)) return false;
-
-    return true;
+StopPacket::StopPacket(byte (&buffer)[MAX_COMMAND_LENGTH], uint8_t bufferLength) : CommandPacket(buffer, bufferLength) 
+{
+    valid = parseData();
 }
 
-bool StopPacket::executeCommand(){
-    if(valid){
-        switch(data.stepper_id)
+bool StopPacket::parseData()
+{
+    if (valid)
+    {
+        if (!(bufferLength == sizeof(data) + 1))
+            return false;
+
+        memcpy(&data, buffer, sizeof(data));
+
+        if (data.cmd_id != commandID)
+            return false;
+        if (!isStepperIdValid(data.stepper_id))
+            return false;
+
+        return true;
+    }
+    return false;
+}
+
+bool StopPacket::executeCommand()
+{
+    if (valid)
+    {
+        switch (data.stepper_id)
         {
-            case selector_all:
-                for(int i = 0; i < NUM_STEPPERS; i++){
-                    steppers[i]->stop();
-                }
+        case selector_all:
+            for (int i = 0; i < NUM_STEPPERS; i++)
+            {
+                steppers[i]->stop();
+            }
             break;
 
-            case selector_hour:
-                for(int i = 0; i < NUM_STEPPERS_H; i++){
-                    h_steppers[i]->stop();
-                }
+        case selector_hour:
+            for (int i = 0; i < NUM_STEPPERS_H; i++)
+            {
+                h_steppers[i]->stop();
+            }
             break;
 
-            case selector_minute:
-                for(int i = 0; i < NUM_STEPPERS_M; i++){
-                    m_steppers[i]->stop();
-                }
+        case selector_minute:
+            for (int i = 0; i < NUM_STEPPERS_M; i++)
+            {
+                m_steppers[i]->stop();
+            }
             break;
-            
-            default: //all the other stepper ids selecting individual steppers
-                steppers[data.stepper_id]->stop();
-                break;
+
+        default: // all the other stepper ids selecting individual steppers
+            steppers[data.stepper_id]->stop();
+            break;
         }
         return true;
     }
@@ -435,104 +560,68 @@ bool StopPacket::executeCommand(){
 
 #pragma region Wiggle Packet
 
-WigglePacket::WigglePacket() : CommandPacket(){}
+WigglePacket::WigglePacket() : CommandPacket() {}
 
-WigglePacket::WigglePacket(byte (&buffer)[MAX_COMMAND_LENGTH], uint8_t bufferLength) : CommandPacket(buffer, bufferLength){}
-
-bool WigglePacket::parseData(){
-    if (!(bufferLength == sizeof(data) + 1)) return false;
-
-    memcpy(&data, buffer, sizeof(data));
-
-    if (data.cmd_id != commandID) return false;
-    if(!isStepperIdValid(data.stepper_id)) return false;
-    if (data.dir != 1 && data.dir != -1) return false;
-
-    return true;
+WigglePacket::WigglePacket(byte (&buffer)[MAX_COMMAND_LENGTH], uint8_t bufferLength) : CommandPacket(buffer, bufferLength) 
+{
+    valid = parseData();
 }
 
-bool WigglePacket::executeCommand(){
-    if(valid){
-        switch(data.stepper_id)
-        {
-            case selector_all:
-                for(int i = 0; i < NUM_STEPPERS; i++){
-                    steppers[i]->wiggle(data.distance * data.dir);
-                }
-            break;
+bool WigglePacket::parseData()
+{
+    if (valid)
+    {
+        if (!(bufferLength == sizeof(data) + 1))
+            return false;
 
-            case selector_hour:
-                for(int i = 0; i < NUM_STEPPERS_H; i++){
-                    h_steppers[i]->wiggle(data.distance * data.dir);
-                }
-            break;
+        memcpy(&data, buffer, sizeof(data));
 
-            case selector_minute:
-                for(int i = 0; i < NUM_STEPPERS_M; i++){
-                    m_steppers[i]->wiggle(data.distance * data.dir);
-                }
-            break;
+        if (data.cmd_id != commandID)
+            return false;
+        if (!isStepperIdValid(data.stepper_id))
+            return false;
+        if (data.dir != 1 && data.dir != -1)
+            return false;
 
-            default: //all the other stepper ids selecting individual steppers
-                steppers[data.stepper_id]->wiggle(data.distance * data.dir);
-                break;
-        }
         return true;
     }
     return false;
 }
 
-#pragma endregion
+bool WigglePacket::executeCommand()
+{
+    if (valid)
+    {
+        switch (data.stepper_id)
+        {
+        case selector_all:
+            for (int i = 0; i < NUM_STEPPERS; i++)
+            {
+                steppers[i]->wiggle(data.distance * data.dir);
+            }
+            break;
 
-#pragma region Command Queue
+        case selector_hour:
+            for (int i = 0; i < NUM_STEPPERS_H; i++)
+            {
+                h_steppers[i]->wiggle(data.distance * data.dir);
+            }
+            break;
 
-bool CommandQueue::pushCommand(byte (&buffer)[MAX_COMMAND_LENGTH], uint8_t bufferLength){
-    commands[current_push_index].bufferLength = bufferLength;
-    memcpy(commands[current_push_index].buffer, buffer, bufferLength);
-    commands[current_push_index].commandID = static_cast<uint8_t>(commands[current_push_index].buffer[0]);
-    
-    if(!commands[current_push_index].hasExecuted){
-        //if the command at the current_push_index has not been executed yet, push the execute index forward 
-        //this keeps the queue fifo but allows overwriting of commands that have not been executed yet
-        //if the queue is full
-        current_execute_index = (current_execute_index + 1) % CMD_QUEUE_LENGTH; 
+        case selector_minute:
+            for (int i = 0; i < NUM_STEPPERS_M; i++)
+            {
+                m_steppers[i]->wiggle(data.distance * data.dir);
+            }
+            break;
 
-        current_push_index = (current_push_index + 1) % CMD_QUEUE_LENGTH;
-
+        default: // all the other stepper ids selecting individual steppers
+            steppers[data.stepper_id]->wiggle(data.distance * data.dir);
+            break;
+        }
         return true;
     }
-    else{
-        commands[current_push_index].hasExecuted = false;
-
-        current_push_index = (current_push_index + 1) % CMD_QUEUE_LENGTH;
-
-        return false;
-    }
-}
-
-bool CommandQueue::isEmpty(){
-    return commands[current_execute_index].hasExecuted;
-}
-
-const CommandData& CommandQueue::popCommand(){
-    if(!isEmpty()){
-        commands[current_execute_index].hasExecuted = true;
-
-        uint16_t temp = current_execute_index;
-        current_execute_index = (current_execute_index + 1) % CMD_QUEUE_LENGTH;
-
-        return commands[temp];
-    }
-#if DEBUG
-    Serial.println("Command queue is empty");
-    Serial.println("Returning invalid command");
-    //print push and execute index
-    Serial.print("Push index: ");
-    Serial.println(current_push_index);
-    Serial.print("Execute index: ");
-    Serial.println(current_execute_index);
-#endif
-    return invalid_command;
+    return false;
 }
 
 #pragma endregion

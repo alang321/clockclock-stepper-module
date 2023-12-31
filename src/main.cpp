@@ -3,6 +3,7 @@
 #include "config.h"
 #include "steppers.h"
 #include "packet_handlers.h"
+#include "command_queue.h"
 
 // i2c handlers
 void i2c_receive(int numBytesReceived);
