@@ -9,12 +9,10 @@
 
 #define CMD_COUNT 9
 
-#define MAX_COMMAND_LENGTH 8 //max length of a command data in bytes + 2
+#define MAX_COMMAND_LENGTH 8 //max length of a command data in bytes + 1
 
 enum cmd_identifier {enable_driver = 0, set_speed = 1, set_accel = 2, moveTo = 3, moveTo_extra_revs = 4, move = 5, stop = 6, wiggle = 7, moveTo_min_steps = 8};
 enum stepper_selector {selector_minute = -3, selector_hour = -2, selector_all = -1};
-
-bool isCommandIDValid(uint8_t cmd_id);
 
 #pragma region Packet data structs
 
@@ -91,12 +89,14 @@ public:
     byte buffer[MAX_COMMAND_LENGTH];
     int bufferLength = 0;
     bool valid = false;
+    const uint8_t commandID = 0;
 
     CommandPacket();
     CommandPacket(byte (&buffer)[MAX_COMMAND_LENGTH], uint8_t bufferLength);
     virtual bool executeCommand() = 0;
-    virtual bool parseData() = 0;
 protected:
+    bool verifyChecksum();
+    virtual bool parseData() = 0;
     bool isStepperIdValid(int8_t stepper_id);
 };
 
@@ -106,117 +106,128 @@ protected:
 
 class EnableDriverPacket : public CommandPacket{
 public:
+    const uint8_t commandID = enable_driver;
+
     EnableDriverPacket();
     EnableDriverPacket(byte (&buffer)[MAX_COMMAND_LENGTH], uint8_t bufferLength);
 
     bool executeCommand() override;
-    bool parseData() override;
 
 private:
+    bool parseData() override;
 
     enable_driver_datastruct data;
 };
 
 class SetSpeedPacket : public CommandPacket{
 public:
+    const uint8_t commandID = set_speed;
+
     SetSpeedPacket();
     SetSpeedPacket(byte (&buffer)[MAX_COMMAND_LENGTH], uint8_t bufferLength);
 
     bool executeCommand() override;
-    bool parseData() override;
 
 private:
+    bool parseData() override;
     set_speed_datastruct data;
 };
 
 class SetAccelPacket : public CommandPacket{
 public:
+    const uint8_t commandID = set_accel;
+
     SetAccelPacket();
     SetAccelPacket(byte (&buffer)[MAX_COMMAND_LENGTH], uint8_t bufferLength);
 
     bool executeCommand() override;
-    bool parseData() override;
 
 private:
-
+    bool parseData() override;
     set_accel_datastruct data;
 };
 
 class MoveToPacket : public CommandPacket{
 public:
+    const uint8_t commandID = moveTo;
+
     MoveToPacket();
     MoveToPacket(byte (&buffer)[MAX_COMMAND_LENGTH], uint8_t bufferLength);
 
     bool executeCommand() override;
+
+private:    
     bool parseData() override;
-
-private:
-
     moveTo_datastruct data;
 };
 
 class MoveToExtraRevsPacket : public CommandPacket{
 public:
+    const uint8_t commandID = moveTo_extra_revs;
+
     MoveToExtraRevsPacket();
     MoveToExtraRevsPacket(byte (&buffer)[MAX_COMMAND_LENGTH], uint8_t bufferLength);
 
     bool executeCommand() override;
+
+private:    
     bool parseData() override;
-
-private:
-
     moveTo_extra_revs_datastruct data;
 };
 
 class MoveToMinStepsPacket : public CommandPacket{
 public:
+    const uint8_t commandID = moveTo_min_steps;
+
     MoveToMinStepsPacket();
     MoveToMinStepsPacket(byte (&buffer)[MAX_COMMAND_LENGTH], uint8_t bufferLength);
 
     bool executeCommand() override;
-    bool parseData() override;
 
 private:
-
+    bool parseData() override;
     moveTo_min_steps_datastruct data;
 };
 
 class MovePacket : public CommandPacket{
 public:
+    const uint8_t commandID = move;
+
     MovePacket();
     MovePacket(byte (&buffer)[MAX_COMMAND_LENGTH], uint8_t bufferLength);
 
     bool executeCommand() override;
-    bool parseData() override;
 
 private:
-
+    bool parseData() override;
     move_datastruct data;
 };
 
 class StopPacket : public CommandPacket{
 public:
+    const uint8_t commandID = stop;
+
     StopPacket();
     StopPacket(byte (&buffer)[MAX_COMMAND_LENGTH], uint8_t bufferLength);
 
     bool executeCommand() override;
-    bool parseData() override;
 
 private:
-
+    bool parseData() override;
     stop_datastruct data;
 };
 
 class WigglePacket : public CommandPacket{
 public:
+    const uint8_t commandID = wiggle;
+
     WigglePacket();
     WigglePacket(byte (&buffer)[MAX_COMMAND_LENGTH], uint8_t bufferLength);
 
     bool executeCommand() override;
-    bool parseData() override;
 
 private:
-
+    bool parseData() override;
     wiggle_datastruct data;
 };
 

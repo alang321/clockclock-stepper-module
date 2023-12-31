@@ -7,7 +7,6 @@
 // i2c handlers
 void i2c_receive(int numBytesReceived);
 void i2c_request();
-bool verifyChecksum(byte (&buffer)[MAX_COMMAND_LENGTH], uint8_t bufferLength);
 
 CommandQueue i2c_cmd_queue;
 
@@ -50,100 +49,69 @@ void loop()
             return;
         }
 #endif
-        // check if the checksum is correct
-        if (verifyChecksum(next_cmd_data.buffer, next_cmd_data.bufferLength) && isCommandIDValid(next_cmd_data.commandID))
+        // call the correct packet handler for each command id, these parse the buffer, check the checksum, check if the command is valid and then execute the command
+        switch (next_cmd_data.commandID)
         {
-            // call the correct packet handler for each command id
-            switch (next_cmd_data.commandID)
-            {
-            case enable_driver:
-            {
-                EnableDriverPacket packet(next_cmd_data.buffer, next_cmd_data.bufferLength);
-                if (packet.parseData())
-                {
-                    packet.executeCommand();
-                }
-                break;
-            }
-            case set_speed:
-            {
-                SetSpeedPacket packet(next_cmd_data.buffer, next_cmd_data.bufferLength);
-                if (packet.parseData())
-                {
-                    packet.executeCommand();
-                }
-                break;
-            }
-            case set_accel:
-            {
-                SetAccelPacket packet(next_cmd_data.buffer, next_cmd_data.bufferLength);
-                if (packet.parseData())
-                {
-                    packet.executeCommand();
-                }
-                break;
-            }
-            case moveTo:
-            {
-                MoveToPacket packet(next_cmd_data.buffer, next_cmd_data.bufferLength);
-                if (packet.parseData())
-                {
-                    packet.executeCommand();
-                }
-                break;
-            }
-            case moveTo_extra_revs:
-            {
-                MoveToExtraRevsPacket packet(next_cmd_data.buffer, next_cmd_data.bufferLength);
-                if (packet.parseData())
-                {
-                    packet.executeCommand();
-                }
-                break;
-            }
-            case move:
-            {
-                MovePacket packet(next_cmd_data.buffer, next_cmd_data.bufferLength);
-                if (packet.parseData())
-                {
-                    packet.executeCommand();
-                }
-                break;
-            }
-            case stop:
-            {
-                StopPacket packet(next_cmd_data.buffer, next_cmd_data.bufferLength);
-                if (packet.parseData())
-                {
-                    packet.executeCommand();
-                }
-                break;
-            }
-            case wiggle:
-            {
-                WigglePacket packet(next_cmd_data.buffer, next_cmd_data.bufferLength);
-                if (packet.parseData())
-                {
-                    packet.executeCommand();
-                }
-                break;
-            }
-            case moveTo_min_steps:
-            {
-                MoveToMinStepsPacket packet(next_cmd_data.buffer, next_cmd_data.bufferLength);
-                if (packet.parseData())
-                {
-                    packet.executeCommand();
-                }
-                break;
-            }
+        case enable_driver:
+        {
+            EnableDriverPacket packet(next_cmd_data.buffer, next_cmd_data.bufferLength);
+            packet.executeCommand();
+            break;
+        }
+        case set_speed:
+        {
+            SetSpeedPacket packet(next_cmd_data.buffer, next_cmd_data.bufferLength);
+            packet.executeCommand();
+            break;
+        }
+        case set_accel:
+        {
+            SetAccelPacket packet(next_cmd_data.buffer, next_cmd_data.bufferLength);
+            packet.executeCommand();
+            break;
+        }
+        case moveTo:
+        {
+            MoveToPacket packet(next_cmd_data.buffer, next_cmd_data.bufferLength);
+            packet.executeCommand();
+            break;
+        }
+        case moveTo_extra_revs:
+        {
+            MoveToExtraRevsPacket packet(next_cmd_data.buffer, next_cmd_data.bufferLength);
+            packet.executeCommand();
+            break;
+        }
+        case move:
+        {
+            MovePacket packet(next_cmd_data.buffer, next_cmd_data.bufferLength);
+            packet.executeCommand();
+            break;
+        }
+        case stop:
+        {
+            StopPacket packet(next_cmd_data.buffer, next_cmd_data.bufferLength);
+            packet.executeCommand();
+            break;
+        }
+        case wiggle:
+        {
+            WigglePacket packet(next_cmd_data.buffer, next_cmd_data.bufferLength);
+            packet.executeCommand();
+            break;
+        }
+        case moveTo_min_steps:
+        {
+            MoveToMinStepsPacket packet(next_cmd_data.buffer, next_cmd_data.bufferLength);
+            packet.executeCommand();
+            break;
+        }
 
-            default:
+        default:
 #if DEBUG
-                Serial.println("Invalid command ID received, this shouldnt happen here, ignoring command");
+            Serial.println("Invalid command ID received, this can happen here due to interference, ignoring command");
 #endif
-                break;
-            }
+            break;
         }
     }
 
@@ -186,16 +154,6 @@ void i2c_request()
     }
 
     Wire.write(is_running_bitmap);
-}
-
-bool verifyChecksum(byte (&buffer)[MAX_COMMAND_LENGTH], uint8_t bufferLength)
-{
-    uint8_t checksum = 0;
-    for (int i = 0; i < bufferLength - 1; i++)
-    {
-        checksum += buffer[i];
-    }
-    return checksum == buffer[bufferLength - 1];
 }
 
 #pragma endregion
