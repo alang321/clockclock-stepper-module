@@ -4,6 +4,16 @@
 #include "config.h"
 #include "steppers.h"
 
+bool isStepperIDValid(int8_t stepper_id)
+{
+    return stepper_id >= STEPPER_ID_MIN && stepper_id <= STEPPER_ID_MAX;
+}
+
+bool isCommandIDValid(uint8_t command_id)
+{
+    return command_id >= CMD_ID_MIN && command_id <= CMD_ID_MAX;
+}
+
 #pragma region Abstract Packet Class
 
 CommandPacket::CommandPacket() {}
@@ -15,11 +25,6 @@ CommandPacket::CommandPacket(byte (&buffer)[MAX_COMMAND_LENGTH], uint8_t bufferL
     this->bufferLength = bufferLength;
 
     valid = verifyChecksum();
-}
-
-bool CommandPacket::isStepperIdValid(int8_t stepper_id)
-{
-    return stepper_id >= STEPPER_ID_MIN && stepper_id <= STEPPER_ID_MAX;
 }
 
 bool CommandPacket::verifyChecksum()
@@ -47,7 +52,7 @@ bool EnableDriverPacket::parseData()
 {
     if (valid)
     {
-        if (!(bufferLength == sizeof(data) + 1))
+        if (!(bufferLength == sizeof(data)))
             return false;
 
         memcpy(&data, buffer, sizeof(data));
@@ -85,7 +90,7 @@ bool SetSpeedPacket::parseData()
 {
     if (valid)
     {
-        if (!(bufferLength == sizeof(data) + 1))
+        if (!(bufferLength == sizeof(data)))
             return false;
 
         memcpy(&data, buffer, sizeof(data));
@@ -94,7 +99,7 @@ bool SetSpeedPacket::parseData()
             return false;
         if (data.speed < MIN_SPEED || data.speed > MAX_SPEED)
             return false;
-        if (!isStepperIdValid(data.stepper_id))
+        if (!isStepperIDValid(data.stepper_id))
             return false;
 
         return true;
@@ -153,7 +158,7 @@ bool SetAccelPacket::parseData()
 {
     if (valid)
     {
-        if (!(bufferLength == sizeof(data) + 1))
+        if (!(bufferLength == sizeof(data)))
             return false;
 
         memcpy(&data, buffer, sizeof(data));
@@ -162,7 +167,7 @@ bool SetAccelPacket::parseData()
             return false;
         if (data.accel < MAX_ACCEL || data.accel > MAX_ACCEL)
             return false;
-        if (!isStepperIdValid(data.stepper_id))
+        if (!isStepperIDValid(data.stepper_id))
             return false;
 
         return true;
@@ -230,7 +235,7 @@ bool MoveToPacket::parseData()
 {
     if (valid)
     {
-        if (!(bufferLength == sizeof(data) + 1))
+        if (!(bufferLength == sizeof(data)))
             return false;
 
         memcpy(&data, buffer, sizeof(data));
@@ -239,7 +244,7 @@ bool MoveToPacket::parseData()
             return false;
 
         // check if data is in valid range
-        if (!isStepperIdValid(data.stepper_id))
+        if (!isStepperIDValid(data.stepper_id))
             return false;
 
         if (data.dir != 1 && data.dir != -1 && data.dir != 0)
@@ -301,14 +306,14 @@ bool MoveToExtraRevsPacket::parseData()
 {
     if (valid)
     {
-        if (!(bufferLength == sizeof(data) + 1))
+        if (!(bufferLength == sizeof(data)))
             return false;
 
         memcpy(&data, buffer, sizeof(data));
 
         if (data.cmd_id != commandID)
             return false;
-        if (!isStepperIdValid(data.stepper_id))
+        if (!isStepperIDValid(data.stepper_id))
             return false;
         if (data.dir != 1 && data.dir != -1 && data.dir != 0)
             return false;
@@ -369,14 +374,14 @@ bool MoveToMinStepsPacket::parseData()
 {
     if (valid)
     {
-        if (!(bufferLength == sizeof(data) + 1))
+        if (!(bufferLength == sizeof(data)))
             return false;
 
         memcpy(&data, buffer, sizeof(data));
 
         if (data.cmd_id != commandID)
             return false;
-        if (!isStepperIdValid(data.stepper_id))
+        if (!isStepperIDValid(data.stepper_id))
             return false;
         if (data.dir != 1 && data.dir != -1 && data.dir != 0)
             return false;
@@ -437,14 +442,14 @@ bool MovePacket::parseData()
 {
     if (valid)
     {
-        if (!(bufferLength == sizeof(data) + 1))
+        if (!(bufferLength == sizeof(data)))
             return false;
 
         memcpy(&data, buffer, sizeof(data));
 
         if (data.cmd_id != commandID)
             return false;
-        if (!isStepperIdValid(data.stepper_id))
+        if (!isStepperIDValid(data.stepper_id))
             return false;
         if (data.dir != 1 && data.dir != -1 && data.dir != 0)
             return false;
@@ -505,14 +510,14 @@ bool StopPacket::parseData()
 {
     if (valid)
     {
-        if (!(bufferLength == sizeof(data) + 1))
+        if (!(bufferLength == sizeof(data)))
             return false;
 
         memcpy(&data, buffer, sizeof(data));
 
         if (data.cmd_id != commandID)
             return false;
-        if (!isStepperIdValid(data.stepper_id))
+        if (!isStepperIDValid(data.stepper_id))
             return false;
 
         return true;
@@ -571,14 +576,14 @@ bool WigglePacket::parseData()
 {
     if (valid)
     {
-        if (!(bufferLength == sizeof(data) + 1))
+        if (!(bufferLength == sizeof(data)))
             return false;
 
         memcpy(&data, buffer, sizeof(data));
 
         if (data.cmd_id != commandID)
             return false;
-        if (!isStepperIdValid(data.stepper_id))
+        if (!isStepperIDValid(data.stepper_id))
             return false;
         if (data.dir != 1 && data.dir != -1)
             return false;

@@ -12,14 +12,14 @@ void i2c_request();
 CommandQueue i2c_cmd_queue;
 
 #pragma region setup and loop
+
 // the setup function runs once when you press reset or power the board
 void setup()
 {
-    // initialize steppers
-    initializeSteppers();
-
-    // set enable_pin to high so no weird behaviour happens during mcu startup (has external pull down)
     delay(5);
+    initializeSteppers();
+    
+    // set enable_pin to high so no weird behaviour happens during mcu startup (has external pull down)
     pinMode(ENABLE_PIN, OUTPUT);
     digitalWrite(ENABLE_PIN, HIGH);
 

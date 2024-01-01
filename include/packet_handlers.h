@@ -3,15 +3,19 @@
 #include <Arduino.h>
 #include "config.h"
 
-#define STEPPER_ID_MIN -3
-#define STEPPER_ID_MAX (NUM_STEPPERS - 1)
-
-#define CMD_COUNT 9
-
-#define MAX_COMMAND_LENGTH 8 //max length of a command data in bytes + 1
-
 enum cmd_identifier {enable_driver = 0, set_speed = 1, set_accel = 2, moveTo = 3, moveTo_extra_revs = 4, move = 5, stop = 6, wiggle = 7, moveTo_min_steps = 8};
-enum stepper_selector {selector_minute = -3, selector_hour = -2, selector_all = -1};
+enum stepper_selector {selector_minute = -3, selector_hour = -2, selector_all = -1, x1m=0, x2m=1, x3m=2, x4m=3, x1h=4, x2h=5, x3h=6, x4h=7};
+
+#define STEPPER_ID_MIN -3
+#define STEPPER_ID_MAX 7
+
+#define CMD_ID_MIN 0
+#define CMD_ID_MAX 8
+
+#define MAX_COMMAND_LENGTH 8 //max length of a command data in bytes
+
+bool isStepperIDValid(int8_t stepper_id);
+bool isCommandIDValid(uint8_t command_id);
 
 #pragma region Packet data structs
 
@@ -20,18 +24,21 @@ enum stepper_selector {selector_minute = -3, selector_hour = -2, selector_all = 
 struct enable_driver_datastruct {
     uint8_t cmd_id; //1bytes
     bool enable; //1bytes # true enables the driver, false disables it
+    uint8_t checksum; //1bytes
 };
 
 struct set_speed_datastruct {
     uint8_t cmd_id; //1bytes
     uint16_t speed; //2bytes
     int8_t stepper_id; // -1  all, -2 hour steps, -3 minute steps, 1byte 
+    uint8_t checksum; //1bytes
 };
 
 struct set_accel_datastruct {
     uint8_t cmd_id; //1bytes
     uint16_t accel; //2bytes
     int8_t stepper_id; // -1  all, -2 hour steps, -3 minute steps, 1byte 
+    uint8_t checksum; //1bytes
 };
 
 struct moveTo_datastruct {
@@ -39,6 +46,7 @@ struct moveTo_datastruct {
     int16_t position; //2bytes
     int8_t dir; // -1 ccw, 0 shortest path, 1 cw 1byte
     int8_t stepper_id; // -1  all, -2 hour steps, -3 minute steps, 1byte 
+    uint8_t checksum; //1bytes
 };
 
 struct moveTo_extra_revs_datastruct { // moveTo but with an extra variable that allows rotating the stepper a variable extra times before reaching  target destination
@@ -47,6 +55,7 @@ struct moveTo_extra_revs_datastruct { // moveTo but with an extra variable that 
     int8_t dir; // -1 ccw, 1 cw 1byte
     uint8_t extra_revs; //1bytes
     int8_t stepper_id; // -1  all, -2 hour steps, -3 minute steps, 1byte 
+    uint8_t checksum; //1bytes
 };
 
 struct moveTo_min_steps_datastruct {
@@ -55,6 +64,7 @@ struct moveTo_min_steps_datastruct {
     int8_t dir; // -1 ccw, 1 cw 1byte
     uint16_t min_steps; //2bytes
     int8_t stepper_id; // -1  all, -2 hour steps, -3 minute steps, 1byte 
+    uint8_t checksum; //1bytes
 };
 
 struct move_datastruct {
@@ -62,11 +72,13 @@ struct move_datastruct {
     uint16_t distance; //2bytes
     int8_t dir; // -1 ccw, 1 cw 1byte
     int8_t stepper_id; // -1  all, -2 hour steps, -3 minute steps, 1byte 
+    uint8_t checksum; //1bytes
 };
 
 struct stop_datastruct {
     uint8_t cmd_id; //1bytes
     int8_t stepper_id; // -1  all, -2 hour steps, -3 minute steps, 1byte 
+    uint8_t checksum; //1bytes
 };
 
 struct wiggle_datastruct {
@@ -74,6 +86,7 @@ struct wiggle_datastruct {
     uint16_t distance; //2bytes
     int8_t dir; // -1 ccw, 1 cw 1byte
     int8_t stepper_id; // -1  all, -2 hour steps, -3 minute steps, 1byte 
+    uint8_t checksum; //1bytes
 };
 
 #pragma pack(pop)
@@ -96,7 +109,6 @@ public:
 protected:
     bool verifyChecksum();
     virtual bool parseData() = 0;
-    bool isStepperIdValid(int8_t stepper_id);
 };
 
 #pragma endregion
