@@ -180,7 +180,7 @@ void AccelStepper::doWiggle()
 // Implements steps according to the current step interval
 // You must call this at least once per step
 // returns true if a step occurred
-boolean AccelStepper::runSpeed()
+bool AccelStepper::runSpeed()
 {
     // Dont do anything unless we actually have a step interval
     if (!_stepInterval)
@@ -322,7 +322,7 @@ void AccelStepper::computeNewSpeed()
 // You must call this at least once per step, preferably in your main loop
 // If the motor is in the desired position, the cost is very small
 // returns true if the motor is still running to the target position.
-boolean AccelStepper::run()
+bool AccelStepper::run()
 {
     doWiggle();
     if (runSpeed())
@@ -708,7 +708,7 @@ void AccelStepper::runToPosition()
 	YIELD; // Let system housekeeping occur
 }
 
-boolean AccelStepper::runSpeedToPosition()
+bool AccelStepper::runSpeedToPosition()
 {
     if (_targetPos == _currentPos)
 	return false;
