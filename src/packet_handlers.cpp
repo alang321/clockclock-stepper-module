@@ -165,7 +165,7 @@ bool SetAccelPacket::parseData()
 
         if (data.cmd_id != commandID)
             return false;
-        if (data.accel < MAX_ACCEL || data.accel > MAX_ACCEL)
+        if (data.accel < MIN_ACCEL || data.accel > MAX_ACCEL)
             return false;
         if (!isStepperIDValid(data.stepper_id))
             return false;
