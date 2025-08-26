@@ -20,9 +20,9 @@ public:
 
 private:
     //array of command data for each item in the entire queue length
-    CommandData commands[CMD_QUEUE_LENGTH];
-    uint16_t current_execute_index;
-    uint16_t current_push_index;
+    volatile CommandData commands[CMD_QUEUE_LENGTH];
+    volatile uint16_t current_execute_index;
+    volatile uint16_t current_push_index;
 
     CommandData invalid_command = {{0}, 0, 0, false};
 };

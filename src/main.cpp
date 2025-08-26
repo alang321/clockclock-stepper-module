@@ -10,6 +10,7 @@ void i2c_receive(int numBytesReceived);
 void i2c_request();
 
 CommandQueue i2c_cmd_queue;
+volatile byte is_running_bitmap_shadow = 0;
 
 #pragma region setup and loop
 
@@ -39,10 +40,20 @@ void setup()
 // the loop function runs over and over again forever
 void loop()
 {
+    CommandData next_cmd_data;
+    bool should_process = false;
+
+    noInterrupts();
     if (!i2c_cmd_queue.isEmpty())
     {
-        CommandData next_cmd_data = i2c_cmd_queue.popCommand();
+        next_cmd_data = i2c_cmd_queue.popCommand();
+        should_process = true;
+    }
+    interrupts();
 
+
+    if (should_process)
+    {
 #if DEBUG
         if (!next_cmd_data.hasExecuted)
         {
@@ -120,6 +131,13 @@ void loop()
     {
         steppers[i]->run();
     }
+
+    byte current_running_bitmap = 0;
+    for (int i = 0; i < NUM_STEPPERS; i++)
+    {
+        current_running_bitmap |= (steppers[i]->isRunning() << i);
+    }
+    is_running_bitmap_shadow = current_running_bitmap;
 }
 
 #pragma endregion
@@ -130,7 +148,7 @@ void i2c_receive(int numBytesReceived)
 {
     if (numBytesReceived >= 2 && numBytesReceived <= MAX_COMMAND_LENGTH)
     {
-        byte i2c_buffer[MAX_COMMAND_LENGTH];
+        static byte i2c_buffer[MAX_COMMAND_LENGTH];
         Wire.readBytes((byte *)&i2c_buffer, numBytesReceived);
         i2c_cmd_queue.pushCommand(i2c_buffer, numBytesReceived);
     }
@@ -147,14 +165,7 @@ void i2c_receive(int numBytesReceived)
 
 void i2c_request()
 {
-    byte is_running_bitmap = 0; // 1 if it's still running to target
-
-    for (int i = 0; i < NUM_STEPPERS; i++)
-    {
-        is_running_bitmap |= (steppers[i]->isRunning() << i);
-    }
-
-    Wire.write(is_running_bitmap);
+    Wire.write(is_running_bitmap_shadow);
 }
 
 #pragma endregion
