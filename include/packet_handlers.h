@@ -3,14 +3,14 @@
 #include <Arduino.h>
 #include "config.h"
 
-enum cmd_identifier {enable_driver = 0, set_speed = 1, set_accel = 2, moveTo = 3, moveTo_extra_revs = 4, move = 5, stop = 6, wiggle = 7, moveTo_min_steps = 8};
+enum cmd_identifier {enable_driver = 0, set_speed = 1, set_accel = 2, moveTo = 3, moveTo_extra_revs = 4, move = 5, stop = 6, wiggle = 7, moveTo_min_steps = 8, moveTo_minimize_movement = 9};
 enum stepper_selector {selector_minute = -3, selector_hour = -2, selector_all = -1, x1m=0, x2m=1, x3m=2, x4m=3, x1h=4, x2h=5, x3h=6, x4h=7};
 
 #define STEPPER_ID_MIN -3
 #define STEPPER_ID_MAX 7
 
 #define CMD_ID_MIN 0
-#define CMD_ID_MAX 8
+#define CMD_ID_MAX 9
 
 #define MAX_COMMAND_LENGTH 8 //max length of a command data in bytes
 
@@ -86,6 +86,14 @@ struct wiggle_datastruct {
     uint16_t distance; //2bytes
     int8_t dir; // -1 ccw, 1 cw 1byte
     int8_t stepper_id; // -1  all, -2 hour steps, -3 minute steps, 1byte 
+    uint8_t checksum; //1bytes
+};
+
+struct moveTo_minimize_movement_datastruct {
+    uint8_t cmd_id; //1bytes
+    int16_t position1; //2bytes
+    int16_t position2; //2bytes
+    int8_t clk_id; // 1 bytes, 0 to 3
     uint8_t checksum; //1bytes
 };
 
@@ -240,6 +248,20 @@ public:
 private:
     bool parseData() override;
     wiggle_datastruct data;
+};
+
+class MoveToMinimizeMovementPacket : public CommandPacket{
+public:
+    const uint8_t commandID = moveTo_minimize_movement;
+
+    MoveToMinimizeMovementPacket();
+    MoveToMinimizeMovementPacket(byte (&buffer)[MAX_COMMAND_LENGTH], uint8_t bufferLength);
+
+    bool executeCommand() override;
+
+private:
+    bool parseData() override;
+    moveTo_minimize_movement_datastruct data;
 };
 
 #pragma endregion

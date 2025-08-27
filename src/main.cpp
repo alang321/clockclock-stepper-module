@@ -107,6 +107,12 @@ void loop()
             packet.executeCommand();
             break;
         }
+        case moveTo_minimize_movement:
+        {
+            MoveToMinimizeMovementPacket packet(next_cmd_data.buffer, next_cmd_data.bufferLength);
+            packet.executeCommand();
+            break;
+        }
 
         default:
 #if DEBUG

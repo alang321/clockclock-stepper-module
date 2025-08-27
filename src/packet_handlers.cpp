@@ -630,3 +630,65 @@ bool WigglePacket::executeCommand()
 }
 
 #pragma endregion
+
+#pragma region MoveTo Minimize Movement Packet
+
+MoveToMinimizeMovementPacket::MoveToMinimizeMovementPacket() : CommandPacket() {}
+
+MoveToMinimizeMovementPacket::MoveToMinimizeMovementPacket(byte (&buffer)[MAX_COMMAND_LENGTH], uint8_t bufferLength) : CommandPacket(buffer, bufferLength) 
+{
+    valid = parseData();
+}
+
+bool MoveToMinimizeMovementPacket::parseData()
+{
+    if (valid)
+    {
+        if (!(bufferLength == sizeof(data)))
+            return false;
+
+        memcpy(&data, buffer, sizeof(data));
+
+        if (data.cmd_id != commandID)
+            return false;
+        if (data.clk_id < 0 || data.clk_id > 3)
+            return false;
+
+        return true;
+    }
+    return false;
+}
+
+bool MoveToMinimizeMovementPacket::executeCommand()
+{
+    if (valid)
+    {
+        long h_pos = h_steppers[data.clk_id]->targetPosition();
+        long m_pos = m_steppers[data.clk_id]->targetPosition();
+        
+        // If both steppers are equal to either a or b, don't do anything
+        if (m_pos == data.position1 && h_pos == data.position2) {
+            h_steppers[data.clk_id]->moveToSingleRevolution(data.position2, 0);
+            m_steppers[data.clk_id]->moveToSingleRevolution(data.position1, 0);
+        } else if (m_pos == data.position2 && h_pos == data.position1) {
+            h_steppers[data.clk_id]->moveToSingleRevolution(data.position1, 0);
+            m_steppers[data.clk_id]->moveToSingleRevolution(data.position2, 0);
+        } else if (m_pos == data.position1) {  // If one is equal, move the other (minute priority)
+            h_steppers[data.clk_id]->moveToSingleRevolution(data.position2, 0);
+            m_steppers[data.clk_id]->moveToSingleRevolution(data.position1, 0);
+        } else if (m_pos == data.position2) {
+            h_steppers[data.clk_id]->moveToSingleRevolution(data.position1, 0);
+            m_steppers[data.clk_id]->moveToSingleRevolution(data.position2, 0);
+        } else if (h_pos == data.position1) {
+            m_steppers[data.clk_id]->moveToSingleRevolution(data.position2, 0);
+            h_steppers[data.clk_id]->moveToSingleRevolution(data.position1, 0);
+        } else { // maybe the h_stepper is equal to pos2, last possibility so move anyway
+            m_steppers[data.clk_id]->moveToSingleRevolution(data.position1, 0);
+            h_steppers[data.clk_id]->moveToSingleRevolution(data.position2, 0);
+        } 
+        return true;
+    }
+    return false;
+}
+
+#pragma endregion
