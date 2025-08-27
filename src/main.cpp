@@ -27,6 +27,7 @@ void setup()
     // Initialize as i2c slave
     Wire.setSCL(I2C_SCL_PIN);
     Wire.setSDA(I2C_SDA_PIN);
+    Wire.setClock(I2C_CLOCK_SPEED);
     Wire.begin(I2C_ADDRESS);
     Wire.onReceive(i2c_receive);
     Wire.onRequest(i2c_request);

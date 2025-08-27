@@ -15,7 +15,7 @@ class CommandQueue{
 public:
     bool pushCommand(byte (&buffer)[MAX_COMMAND_LENGTH], uint8_t bufferLength); //returns true if overwrote a command that hasnt been executed yet
     //this returns a reference to the buffer of the next command to be executed and the command id
-    const CommandData& popCommand();
+    CommandData popCommand();
     bool isEmpty();
 
 private:

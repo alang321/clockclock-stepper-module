@@ -15,6 +15,8 @@
 #define STEPS_PER_REVOLUTION 4320 //360*12
 #define STEPPER_DEFAULT_POS_FRACTION 0.5 //at 6o'clock position
 
+#define I2C_CLOCK_SPEED 50000
+
 #define I2C_SDA_PIN 15
 #define I2C_SCL_PIN 16
 

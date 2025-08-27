@@ -4,7 +4,12 @@
 
 bool CommandQueue::pushCommand(byte (&buffer)[MAX_COMMAND_LENGTH], uint8_t bufferLength){
     commands[current_push_index].bufferLength = bufferLength;
-    memcpy(commands[current_push_index].buffer, buffer, bufferLength);
+    
+    // byte by byte copy
+    for (int i = 0; i < bufferLength; i++) {
+        commands[current_push_index].buffer[i] = buffer[i];
+    }
+
     commands[current_push_index].commandID = static_cast<uint8_t>(commands[current_push_index].buffer[0]);
     
     if(!commands[current_push_index].hasExecuted){
@@ -30,15 +35,27 @@ bool CommandQueue::isEmpty(){
     return commands[current_execute_index].hasExecuted;
 }
 
-const CommandData& CommandQueue::popCommand(){
+CommandData CommandQueue::popCommand(){
     if(!isEmpty()){
         commands[current_execute_index].hasExecuted = true;
 
-        uint16_t temp = current_execute_index;
+        uint16_t temp_index = current_execute_index;
         current_execute_index = (current_execute_index + 1) % CMD_QUEUE_LENGTH;
 
-        return commands[temp];
+        // Create a non-volatile local copy ("snapshot")
+        CommandData snapshot;
+        snapshot.bufferLength = commands[temp_index].bufferLength;
+        snapshot.commandID = commands[temp_index].commandID;
+        snapshot.hasExecuted = true; // Mark the copy as valid
+
+        // Manually copy the buffer contents
+        for(int i = 0; i < snapshot.bufferLength; i++) {
+            snapshot.buffer[i] = commands[temp_index].buffer[i];
+        }
+        
+        return snapshot; // Return the safe, local copy
     }
+    
 #if DEBUG
     Serial.println("Command queue is empty");
     Serial.println("Returning invalid command");
@@ -48,5 +65,6 @@ const CommandData& CommandQueue::popCommand(){
     Serial.print("Execute index: ");
     Serial.println(current_execute_index);
 #endif
+
     return invalid_command;
 }
